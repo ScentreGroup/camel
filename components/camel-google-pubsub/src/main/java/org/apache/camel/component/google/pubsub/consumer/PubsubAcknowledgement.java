@@ -18,9 +18,12 @@ package org.apache.camel.component.google.pubsub.consumer;
 
 import java.util.List;
 
+import com.google.api.client.repackaged.com.google.common.base.Joiner;
 import com.google.api.client.repackaged.com.google.common.base.Strings;
-import com.google.api.services.pubsub.model.AcknowledgeRequest;
-import com.google.api.services.pubsub.model.ModifyAckDeadlineRequest;
+import com.google.pubsub.v1.AcknowledgeRequest;
+import com.google.pubsub.v1.ModifyAckDeadlineRequest;
+import com.google.pubsub.v1.SubscriberGrpc;
+import com.google.pubsub.v1.SubscriptionName;
 import org.apache.camel.component.google.pubsub.GooglePubsubEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,14 +32,14 @@ import org.slf4j.LoggerFactory;
 public abstract class PubsubAcknowledgement {
 
     protected Logger logger;
-    
-    private final String subscriptionFullName;
+
+    private final SubscriptionName subscriptionName;
     private final GooglePubsubEndpoint endpoint;
 
     public PubsubAcknowledgement(GooglePubsubEndpoint endpoint) {
         super();
         this.endpoint = endpoint;
-        this.subscriptionFullName = String.format("projects/%s/subscriptions/%s", endpoint.getProjectId(), endpoint.getDestinationName());
+        this.subscriptionName = SubscriptionName.create(endpoint.getProjectId(), endpoint.getDestinationName());
 
         String loggerId = endpoint.getLoggerId();
 
@@ -48,14 +51,13 @@ public abstract class PubsubAcknowledgement {
     }
 
     void acknowledge(List<String> ackIdList) {
-        AcknowledgeRequest ackRequest = new AcknowledgeRequest()
-                .setAckIds(ackIdList);
+        AcknowledgeRequest ackRequest = AcknowledgeRequest.newBuilder()
+                .setSubscriptionWithSubscriptionName(subscriptionName)
+                .addAllAckIds(ackIdList)
+                .build();
         try {
-            endpoint.getPubsub()
-                    .projects()
-                    .subscriptions()
-                    .acknowledge(subscriptionFullName, ackRequest)
-                    .execute();
+            SubscriberGrpc.newBlockingStub(endpoint.getComponent().getChannelProvider().getChannel())
+                    .acknowledge(ackRequest);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -63,16 +65,13 @@ public abstract class PubsubAcknowledgement {
 
     void resetAckDeadline(List<String> ackIdList, Integer seconds) {
 
-        ModifyAckDeadlineRequest nackRequest = new ModifyAckDeadlineRequest()
-                .setAckIds(ackIdList)
-                .setAckDeadlineSeconds(seconds);
-
+        ModifyAckDeadlineRequest nackRequest = ModifyAckDeadlineRequest.newBuilder()
+                .setSubscriptionWithSubscriptionName(subscriptionName)
+                .addAllAckIds(ackIdList)
+                .setAckDeadlineSeconds(seconds)
+                .build();
         try {
-            endpoint.getPubsub()
-                    .projects()
-                    .subscriptions()
-                    .modifyAckDeadline(subscriptionFullName, nackRequest)
-                    .execute();
+            SubscriberGrpc.newBlockingStub(endpoint.getComponent().getChannelProvider().getChannel()).modifyAckDeadline(nackRequest);
         } catch (Exception e) {
             // It will timeout automatically on the channel
             logger.warn("Unable to reset ack deadline " + ackIdList, e);

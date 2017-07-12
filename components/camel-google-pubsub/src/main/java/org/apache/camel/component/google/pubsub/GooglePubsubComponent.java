@@ -17,24 +17,32 @@
 package org.apache.camel.component.google.pubsub;
 
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 
+import com.google.api.gax.core.CredentialsProvider;
+import com.google.api.gax.grpc.ChannelProvider;
+import com.google.api.gax.grpc.ExecutorProvider;
+import com.google.cloud.pubsub.spi.v1.TopicAdminSettings;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
+import org.apache.camel.impl.DefaultComponent;
 import org.apache.camel.impl.UriEndpointComponent;
 
 /**
  * Represents the component that manages {@link GooglePubsubEndpoint}.
  */
-public class GooglePubsubComponent extends UriEndpointComponent {
+public class GooglePubsubComponent extends DefaultComponent {
 
-    private GooglePubsubConnectionFactory connectionFactory;
+    private ChannelProvider channelProvider;
+    private CredentialsProvider credentialsProvider;
+    private ExecutorProvider executorProvider;
 
     public GooglePubsubComponent() {
-        super(GooglePubsubEndpoint.class);
+        super();
     }
 
     public GooglePubsubComponent(CamelContext context) {
-        super(context, GooglePubsubEndpoint.class);
+        super(context);
     }
 
     @Override
@@ -56,20 +64,57 @@ public class GooglePubsubComponent extends UriEndpointComponent {
     }
 
     /**
-     * Sets the connection factory to use:
+     * Sets the channel provider to use:
      * provides the ability to explicitly manage connection credentials:
      * - the path to the key file
      * - the Service Account Key / Email pair
      */
-    public GooglePubsubConnectionFactory getConnectionFactory() {
-        if (connectionFactory == null) {
-            connectionFactory = new GooglePubsubConnectionFactory();
+    public ChannelProvider getChannelProvider() {
+        if (channelProvider == null) {
+            channelProvider = TopicAdminSettings
+                    .defaultChannelProviderBuilder()
+                    .setExecutorProvider(getExecutorProvider())
+                    .setCredentialsProvider(getCredentialsProvider())
+                    .build();
         }
-        return connectionFactory;
+        return channelProvider;
     }
 
-    public void setConnectionFactory(GooglePubsubConnectionFactory connectionFactory) {
-        this.connectionFactory = connectionFactory;
+    public void setChannelProvider(ChannelProvider channelProvider) {
+        this.channelProvider = channelProvider;
+    }
+
+    public CredentialsProvider getCredentialsProvider() {
+        if (credentialsProvider == null) {
+            credentialsProvider = TopicAdminSettings.defaultCredentialsProviderBuilder().build();
+        }
+        return credentialsProvider;
+    }
+
+    public void setCredentialsProvider(CredentialsProvider credentialsProvider) {
+        this.credentialsProvider = credentialsProvider;
+    }
+
+    public ExecutorProvider getExecutorProvider() {
+        if (executorProvider == null) {
+            executorProvider = new ExecutorProvider() {
+                @Override
+                public boolean shouldAutoClose() {
+                    return true;
+                }
+
+                @Override
+                public ScheduledExecutorService getExecutor() {
+                    return getCamelContext().getExecutorServiceManager()
+                            .newDefaultScheduledThreadPool(this, "grpc-channel-provider");
+                }
+            };
+        }
+        return executorProvider;
+    }
+
+    public void setExecutorProvider(ExecutorProvider executorProvider) {
+        this.executorProvider = executorProvider;
     }
 }
 

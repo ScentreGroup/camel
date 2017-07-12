@@ -16,10 +16,14 @@
  */
 package org.apache.camel.component.google.pubsub;
 
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.api.client.repackaged.com.google.common.base.Strings;
-import com.google.api.services.pubsub.Pubsub;
+import com.google.api.gax.core.CredentialsProvider;
+import com.google.api.gax.grpc.ChannelProvider;
+
+import com.google.cloud.pubsub.spi.v1.TopicAdminSettings;
+import org.apache.camel.AsyncEndpoint;
 import org.apache.camel.Component;
 import org.apache.camel.Consumer;
 import org.apache.camel.ExchangePattern;
@@ -41,7 +45,7 @@ import org.slf4j.LoggerFactory;
  */
 @UriEndpoint(firstVersion = "2.19.0", scheme = "google-pubsub", title = "Google Pubsub",
         syntax = "google-pubsub:projectId:destinationName", label = "messaging")
-public class GooglePubsubEndpoint extends DefaultEndpoint {
+public class GooglePubsubEndpoint extends DefaultEndpoint implements AsyncEndpoint {
 
     private Logger log;
 
@@ -62,14 +66,15 @@ public class GooglePubsubEndpoint extends DefaultEndpoint {
     @UriParam(name = "maxMessagesPerPoll", description = "The max number of messages to receive from the server in a single API call", defaultValue = "1")
     private Integer maxMessagesPerPoll = 1;
 
-    @UriParam(name = "connectionFactory", description = "ConnectionFactory to obtain connection to PubSub Service. If non provided the default one will be used")
-    private GooglePubsubConnectionFactory connectionFactory;
+    @UriParam(name = "channelProvider", description = "GPRC channel provider. If non provided the default one will be used")
+    private ChannelProvider channelProvider;
+
+    @UriParam(name = "credentialsProvider", description = "Credentials provider for channel. If non provided the default one will be used")
+    private CredentialsProvider credentialsProvider;
 
     @UriParam(defaultValue = "AUTO", enums = "AUTO,NONE",
             description = "AUTO = exchange gets ack'ed/nack'ed on completion. NONE = downstream process has to ack/nack explicitly")
     private GooglePubsubConstants.AckMode ackMode = GooglePubsubConstants.AckMode.AUTO;
-
-    private Pubsub pubsub;
 
     public GooglePubsubEndpoint(String uri, Component component, String remaining) {
         super(uri, component);
@@ -91,31 +96,29 @@ public class GooglePubsubEndpoint extends DefaultEndpoint {
             log = LoggerFactory.getLogger(loggerId);
         }
 
-        // Default pubsub connection.
-        // With the publisher endpoints - the main publisher
-        // with the consumer endpoints  - the ack client
-        pubsub = getConnectionFactory().getDefaultClient();
 
-        log.trace("Credential file location : {}", getConnectionFactory().getCredentialsFileLocation());
+        //log.trace("Credential file location : {}", getConnectionFactory().getCredentialsFileLocation());
         log.trace("Project ID: {}", this.projectId);
         log.trace("Destination Name: {}", this.destinationName);
     }
 
+    @Override
     public Producer createProducer() throws Exception {
         afterPropertiesSet();
         return new GooglePubsubProducer(this);
     }
 
+    @Override
     public Consumer createConsumer(Processor processor) throws Exception {
         afterPropertiesSet();
         setExchangePattern(ExchangePattern.InOnly);
         return new GooglePubsubConsumer(this, processor);
     }
 
-    public ExecutorService createExecutor() {
+    public ScheduledExecutorService createExecutor() {
         return getCamelContext()
                 .getExecutorServiceManager()
-                .newFixedThreadPool(this,
+                .newScheduledThreadPool(this,
                                     "GooglePubsubConsumer[" + getDestinationName() + "]",
                                     concurrentConsumers);
     }
@@ -172,20 +175,30 @@ public class GooglePubsubEndpoint extends DefaultEndpoint {
         this.ackMode = ackMode;
     }
 
-    public Pubsub getPubsub() {
-        return pubsub;
+    /**
+     * gRPC ChannelProvider. If non provided the default will be used.
+     */
+    public ChannelProvider getChannelProvider() {
+        return (null == channelProvider)
+                ? getComponent().getChannelProvider()
+                : channelProvider;
+    }
+
+    public void setChannelProvider(ChannelProvider channelProvider) {
+        this.channelProvider = channelProvider;
     }
 
     /**
-     * ConnectionFactory to obtain connection to PubSub Service. If non provided the default will be used.
+     * Credentials provider for the gRPC channel. If non provided the default will be used.
      */
-    public GooglePubsubConnectionFactory getConnectionFactory() {
-        return (null == connectionFactory)
-                ? getComponent().getConnectionFactory()
-                : connectionFactory;
+    public CredentialsProvider getCredentialsProvider() {
+        return (null == credentialsProvider)
+                ? getComponent().getCredentialsProvider()
+                : credentialsProvider;
     }
 
-    public void setConnectionFactory(GooglePubsubConnectionFactory connectionFactory) {
-        this.connectionFactory = connectionFactory;
+    public void setCredentialsProvider(CredentialsProvider credentialsProvider) {
+        this.credentialsProvider = credentialsProvider;
     }
+
 }

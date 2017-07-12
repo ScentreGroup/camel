@@ -32,7 +32,9 @@ public class ExchangeAckTransaction extends PubsubAcknowledgement implements Syn
 
     @Override
     public void onComplete(Exchange exchange) {
+        logger.trace("On complete {}", exchange.getIn().getHeader(GooglePubsubConstants.MESSAGE_ID));
         acknowledge(getAckIdList(exchange));
+        logger.trace("Acknowledged {}", exchange.getIn().getHeader(GooglePubsubConstants.MESSAGE_ID));
     }
 
     @Override
