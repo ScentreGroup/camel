@@ -23,50 +23,70 @@ for this component:
 
 ------------------------------------------------------
 
-[[GooglePubsub-AuthenticationConfiguration]]
-Authentication Configuration
+[[gRPC configuration]]
 
-Google Pubsub component authentication is targeted for use with the GCP Service Accounts.
-For more information please refer to https://cloud.google.com/docs/authentication[Google Cloud Platform Auth Guide]
+The following gRPC configuration options can be set via:
+* ChannelProvider
+* CredentialsProvider
+* GooglePubsubConnectionFactory
+
+The GooglePubsubConnectionFactory is provided for backward compatibility to the GooglePubsub rest implementation.
+Settings will be taken from GooglePubsubConnectionFactory if specified overriding ChannelProvider and
+CredentialsProvider.
+
+The ChannelProvider gets the credentials from the CredentialsProvider.
+
+If no ChannelProvider is specified a default ChannelProvider will be created using the configured
+CredentialsProvider.
+
+If no CredentialsProvider is supplied a default CredentialsProvider will be created which uses the
+default Google Application credentials.
 
 
-Security credentials is controlled through a SecurityPRovidercan be set explicitly via one of the two options:
+[[[GooglePubsub-AuthenticationConfiguration]]
+ Authentication Configuration
 
-* Service Account Email and Service Account Key (PEM format)
-* GCP credentials file location
+ Google Pubsub component authentication is targeted for use with the GCP Service Accounts.
+ For more information please refer to https://cloud.google.com/docs/authentication[Google Cloud Platform Auth Guide]
 
-If both are set, the Service Account Email/Key will take precedence.
+ Google security credentials can be set explicitly via one of the two options:
 
-Or implicitly, where the connection factory falls back on
-https://developers.google.com/identity/protocols/application-default-credentials#howtheywork[Application Default Credentials].
+ * Service Account Email and Service Account Key (PEM format)
+ * GCP credentials file location
 
-*OBS!* The location of the default credentials file is configurable - via GOOGLE_APPLICATION_CREDENTIALS environment variable.
+ If both are set, the Service Account Email/Key will take precedence.
 
-Service Account Email and Service Account Key can be found in the GCP JSON credentials file as client_email and private_key respectively.
+ Or implicitly, where the connection factory falls back on
+ https://developers.google.com/identity/protocols/application-default-credentials#howtheywork[Application Default Credentials].
 
-### URI Format
+ *OBS!* The location of the default credentials file is configurable - via GOOGLE_APPLICATION_CREDENTIALS environment variable.
 
-The GoogleMail Component uses the following URI format:
+ Service Account Email and Service Account Key can be found in the GCP JSON credentials file as client_email and private_key respectively.
 
---------------------------------------------------------
-        google-pubsub://project-id:destinationName?[options]
---------------------------------------------------------
+ Alternatively a CredentialsProvider can be supplied.
 
-Destination Name can be either a topic or a subscription name.
+ ### URI Format
 
-### GooglePubsubComponent
+ The GooglePubsub Component uses the following URI format:
 
-// component options: START
-The Google Pubsub component supports 2 options which are listed below.
+ --------------------------------------------------------
+         google-pubsub://project-id:destinationName?[options]
+ --------------------------------------------------------
+
+ Destination Name can be either a topic or a subscription name.
+
+ ### GooglePubsubComponent
+
+ // component options: START
+ The Google Pubsub component supports 3 options which are listed below.
 
 
 
 [width="100%",cols="2,5,^1,2",options="header"]
 |=======================================================================
 | Name | Description | Default | Type
+| **connectionFactory** (common) | Sets the connection factory to use: provides the ability to explicitly manage connection credentials: - the path to the key file - the Service Account Key / Email pair |  | GooglePubsubConnection Factory
 | **channelProvider** (common) | Sets the channel provider to use: provides the ability to explicitly set the gRPC channel provider |  | com.google.api.gax.grpc.ChannelProvider
-| **credetialsProvider** (common) | Sets the credentials provider to use: provides the ability to explicitly set the channel credentials provider |  | com.google.api.gax.core.CredentialsProvider
-| **executorProvider** (common) | Sets the executor service provider to use: provides the ability to explicitly set the executor provider |  | com.google.api.gax.grpc.ExecutorProvider
 | **resolveProperty Placeholders** (advanced) | Whether the component should resolve property placeholders on itself when starting. Only properties which are of String type can use property placeholders. | true | boolean
 |=======================================================================
 // component options: END
@@ -94,8 +114,7 @@ with the following path and query parameters:
 | Name | Description | Default | Type
 | **ackMode** (common) | AUTO = exchange gets ack'ed/nack'ed on completion. NONE = downstream process has to ack/nack explicitly | AUTO | AckMode
 | **concurrentConsumers** (common) | The number of parallel streams consuming from the subscription | 1 | Integer
-| **channelProvider** (common) | Sets the channel provider to use: provides the ability to explicitly set the gRPC channel provider |  | com.google.api.gax.grpc.ChannelProvider
-| **credetialsProvider** (common) | Sets the credentials provider to use: provides the ability to explicitly set the channel credentials provider |  | com.google.api.gax.core.CredentialsProvider
+| **connectionFactory** (common) | ConnectionFactory to obtain connection to PubSub Service. If non provided the default will be used. |  | GooglePubsubConnection Factory
 | **loggerId** (common) | Logger ID to use when a match to the parent route required |  | String
 | **maxMessagesPerPoll** (common) | The max number of messages to receive from the server in a single API call | 1 | Integer
 | **bridgeErrorHandler** (consumer) | Allows for bridging the consumer to the Camel routing Error Handler which mean any exceptions occurred while the consumer is trying to pickup incoming messages or the likes will now be processed as a message and handled by the routing Error Handler. By default the consumer will use the org.apache.camel.spi.ExceptionHandler to deal with exceptions that will be logged at WARN or ERROR level and ignored. | false | boolean

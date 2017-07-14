@@ -18,27 +18,50 @@ package org.apache.camel.component.google.pubsub;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
 
 import com.google.api.client.util.Strings;
 import com.google.api.gax.core.CredentialsProvider;
 import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.api.gax.core.GoogleCredentialsProvider;
+import com.google.api.gax.grpc.ChannelProvider;
+import com.google.api.gax.grpc.ExecutorProvider;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.pubsub.spi.v1.TopicAdminSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class GooglePubsubCredentialsProviderBuilder {
+public class GooglePubsubConnectionFactory {
+
+    private final Logger logger = LoggerFactory.getLogger(GooglePubsubConnectionFactory.class);
+
     private String serviceAccount;
     private String serviceAccountKey;
     private String credentialsFileLocation;
+    private String pubsubEndpoint;
+    private boolean isPlainTextChannel;
+    private ChannelProvider channelProvider;
 
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    public GooglePubsubConnectionFactory() {
+    }
 
-    public CredentialsProvider build() throws Exception {
+
+    public synchronized ChannelProvider getChannelProvider(ExecutorProvider executorProvider) throws Exception {
+        if (channelProvider == null) {
+            if (isPlainTextChannel) {
+                channelProvider = PlainTextChannelProvider.create(pubsubEndpoint);
+            } else {
+                channelProvider = TopicAdminSettings
+                        .defaultChannelProviderBuilder()
+                        .setExecutorProvider(executorProvider)
+                        .setCredentialsProvider(getCredentialsProvider())
+                        .build();
+            }
+        }
+        return channelProvider;
+    }
+
+    public CredentialsProvider getCredentialsProvider() throws Exception {
         CredentialsProvider credentialsProvider = null;
 
         if (!Strings.isNullOrEmpty(serviceAccount) && !Strings.isNullOrEmpty(serviceAccountKey)) {
@@ -63,7 +86,6 @@ public class GooglePubsubCredentialsProviderBuilder {
         }
 
         return credentialsProvider;
-
     }
 
     private GoogleCredentials createFromFile() throws Exception {
@@ -91,8 +113,9 @@ public class GooglePubsubCredentialsProviderBuilder {
         return serviceAccount;
     }
 
-    public GooglePubsubCredentialsProviderBuilder setServiceAccount(String serviceAccount) {
+    public GooglePubsubConnectionFactory setServiceAccount(String serviceAccount) {
         this.serviceAccount = serviceAccount;
+        resetClient();
         return this;
     }
 
@@ -100,8 +123,9 @@ public class GooglePubsubCredentialsProviderBuilder {
         return serviceAccountKey;
     }
 
-    public GooglePubsubCredentialsProviderBuilder setServiceAccountKey(String serviceAccountKey) {
+    public GooglePubsubConnectionFactory setServiceAccountKey(String serviceAccountKey) {
         this.serviceAccountKey = serviceAccountKey;
+        resetClient();
         return this;
     }
 
@@ -109,8 +133,29 @@ public class GooglePubsubCredentialsProviderBuilder {
         return credentialsFileLocation;
     }
 
-    public GooglePubsubCredentialsProviderBuilder setCredentialsFileLocation(String credentialsFileLocation) {
+    public GooglePubsubConnectionFactory setCredentialsFileLocation(String credentialsFileLocation) {
         this.credentialsFileLocation = credentialsFileLocation;
+        resetClient();
         return this;
+    }
+
+    public String getPubsubEndpoint() {
+        return pubsubEndpoint;
+    }
+
+    public GooglePubsubConnectionFactory setPubsubEndpoint(String pubsubEndpoint) {
+        this.pubsubEndpoint = pubsubEndpoint;
+        resetClient();
+        return this;
+    }
+
+    public GooglePubsubConnectionFactory setIsPlainTextChannel(boolean isPlainTextChannel) {
+        this.isPlainTextChannel = isPlainTextChannel;
+        resetClient();
+        return this;
+    }
+
+    private synchronized void resetClient() {
+        this.channelProvider = null;
     }
 }

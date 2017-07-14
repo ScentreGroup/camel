@@ -42,8 +42,8 @@ class GooglePubsubConsumer extends DefaultConsumer {
 
     private final Processor processor;
     private final Synchronization ackStrategy;
+    private SubscriberGrpc.SubscriberStub subscriberStub;
 
-    private ExecutorService executor;
 
     GooglePubsubConsumer(GooglePubsubEndpoint endpoint, Processor processor) throws Exception {
         super(endpoint, processor);
@@ -64,6 +64,16 @@ class GooglePubsubConsumer extends DefaultConsumer {
         super.doStart();
         localLog.info("Starting Google PubSub consumer for {}/{}", getEndpoint().getProjectId(), getEndpoint().getDestinationName());
 
+        ManagedChannel channel;
+        try {
+            channel = getEndpoint().getChannelProvider().getChannel();
+        } catch (Exception e) {
+            localLog.error("Failure getting channel from PubSub : ", e);
+            return;
+        }
+
+        subscriberStub = SubscriberGrpc.newStub(channel);
+
         for (int i = 0; i < getEndpoint().getConcurrentConsumers(); i++) {
             doPoll();
         }
@@ -73,15 +83,6 @@ class GooglePubsubConsumer extends DefaultConsumer {
     protected void doStop() throws Exception {
         super.doStop();
         localLog.info("Stopping Google PubSub consumer for {}/{}", getEndpoint().getProjectId(), getEndpoint().getDestinationName());
-
-        if (executor != null) {
-            if (getEndpoint() != null && getEndpoint().getCamelContext() != null) {
-                getEndpoint().getCamelContext().getExecutorServiceManager().shutdown(executor);
-            } else {
-                executor.shutdown();
-            }
-        }
-        executor = null;
     }
 
     private void doPoll() {
@@ -102,13 +103,13 @@ class GooglePubsubConsumer extends DefaultConsumer {
 
         ManagedChannel channel;
         try {
-            channel = getEndpoint().getComponent().getChannelProvider().getChannel();
-        } catch (IOException e) {
+            channel = getEndpoint().getChannelProvider().getChannel();
+        } catch (Exception e) {
             localLog.error("Failure getting channel from PubSub : ", e);
             return;
         }
 
-        SubscriberGrpc.newStub(channel)
+        subscriberStub
                 .pull(pullRequest, new StreamObserver<PullResponse>() {
                     @Override
                     public void onNext(PullResponse value) {

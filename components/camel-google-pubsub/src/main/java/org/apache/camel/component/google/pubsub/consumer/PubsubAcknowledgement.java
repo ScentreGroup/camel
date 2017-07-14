@@ -35,6 +35,7 @@ public abstract class PubsubAcknowledgement {
 
     private final SubscriptionName subscriptionName;
     private final GooglePubsubEndpoint endpoint;
+    private final SubscriberGrpc.SubscriberBlockingStub subscriberStub;
 
     public PubsubAcknowledgement(GooglePubsubEndpoint endpoint) {
         super();
@@ -48,6 +49,12 @@ public abstract class PubsubAcknowledgement {
         }
 
         logger = LoggerFactory.getLogger(loggerId);
+        try {
+            subscriberStub = SubscriberGrpc.newBlockingStub(endpoint.getChannelProvider().getChannel());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     void acknowledge(List<String> ackIdList) {
@@ -55,12 +62,9 @@ public abstract class PubsubAcknowledgement {
                 .setSubscriptionWithSubscriptionName(subscriptionName)
                 .addAllAckIds(ackIdList)
                 .build();
-        try {
-            SubscriberGrpc.newBlockingStub(endpoint.getComponent().getChannelProvider().getChannel())
-                    .acknowledge(ackRequest);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+
+        subscriberStub.acknowledge(ackRequest);
+
     }
 
     void resetAckDeadline(List<String> ackIdList, Integer seconds) {
@@ -71,7 +75,7 @@ public abstract class PubsubAcknowledgement {
                 .setAckDeadlineSeconds(seconds)
                 .build();
         try {
-            SubscriberGrpc.newBlockingStub(endpoint.getComponent().getChannelProvider().getChannel()).modifyAckDeadline(nackRequest);
+            subscriberStub.modifyAckDeadline(nackRequest);
         } catch (Exception e) {
             // It will timeout automatically on the channel
             logger.warn("Unable to reset ack deadline " + ackIdList, e);

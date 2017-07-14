@@ -66,8 +66,8 @@ public class GooglePubsubEndpoint extends DefaultEndpoint implements AsyncEndpoi
     @UriParam(name = "maxMessagesPerPoll", description = "The max number of messages to receive from the server in a single API call", defaultValue = "1")
     private Integer maxMessagesPerPoll = 1;
 
-    @UriParam(name = "channelProvider", description = "GPRC channel provider. If non provided the default one will be used")
-    private ChannelProvider channelProvider;
+    @UriParam(name = "connectionFactory", description = "ConnectionFactory to obtain connection to PubSub Service. If non provided the default one will be used")
+    private GooglePubsubConnectionFactory connectionFactory;
 
     @UriParam(name = "credentialsProvider", description = "Credentials provider for channel. If non provided the default one will be used")
     private CredentialsProvider credentialsProvider;
@@ -75,6 +75,8 @@ public class GooglePubsubEndpoint extends DefaultEndpoint implements AsyncEndpoi
     @UriParam(defaultValue = "AUTO", enums = "AUTO,NONE",
             description = "AUTO = exchange gets ack'ed/nack'ed on completion. NONE = downstream process has to ack/nack explicitly")
     private GooglePubsubConstants.AckMode ackMode = GooglePubsubConstants.AckMode.AUTO;
+
+    private ChannelProvider channelProvider;
 
     public GooglePubsubEndpoint(String uri, Component component, String remaining) {
         super(uri, component);
@@ -96,7 +98,7 @@ public class GooglePubsubEndpoint extends DefaultEndpoint implements AsyncEndpoi
             log = LoggerFactory.getLogger(loggerId);
         }
 
-
+        channelProvider = createChannelProvider();
         //log.trace("Credential file location : {}", getConnectionFactory().getCredentialsFileLocation());
         log.trace("Project ID: {}", this.projectId);
         log.trace("Destination Name: {}", this.destinationName);
@@ -113,6 +115,17 @@ public class GooglePubsubEndpoint extends DefaultEndpoint implements AsyncEndpoi
         afterPropertiesSet();
         setExchangePattern(ExchangePattern.InOnly);
         return new GooglePubsubConsumer(this, processor);
+    }
+
+    private ChannelProvider createChannelProvider() throws Exception {
+        ChannelProvider cp;
+
+        if (getConnectionFactory() != null) {
+            cp = getConnectionFactory().getChannelProvider(getComponent().getExecutorProvider());
+        } else  {
+            cp = getComponent().getChannelProvider();
+        }
+        return cp;
     }
 
     public ScheduledExecutorService createExecutor() {
@@ -175,30 +188,21 @@ public class GooglePubsubEndpoint extends DefaultEndpoint implements AsyncEndpoi
         this.ackMode = ackMode;
     }
 
-    /**
-     * gRPC ChannelProvider. If non provided the default will be used.
-     */
     public ChannelProvider getChannelProvider() {
-        return (null == channelProvider)
-                ? getComponent().getChannelProvider()
-                : channelProvider;
-    }
-
-    public void setChannelProvider(ChannelProvider channelProvider) {
-        this.channelProvider = channelProvider;
+        return channelProvider;
     }
 
     /**
-     * Credentials provider for the gRPC channel. If non provided the default will be used.
+     * ConnectionFactory to obtain connection to PubSub Service. If non provided the default will be used.
      */
-    public CredentialsProvider getCredentialsProvider() {
-        return (null == credentialsProvider)
-                ? getComponent().getCredentialsProvider()
-                : credentialsProvider;
+    public GooglePubsubConnectionFactory getConnectionFactory() {
+        return (null == connectionFactory)
+                ? getComponent().getConnectionFactory()
+                : connectionFactory;
     }
 
-    public void setCredentialsProvider(CredentialsProvider credentialsProvider) {
-        this.credentialsProvider = credentialsProvider;
+    public void setConnectionFactory(GooglePubsubConnectionFactory connectionFactory) {
+        this.connectionFactory = connectionFactory;
     }
 
 }

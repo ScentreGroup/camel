@@ -43,7 +43,8 @@ import org.slf4j.LoggerFactory;
  */
 public class GooglePubsubProducer extends DefaultAsyncProducer {
 
-    private Logger logger;
+    private final Logger logger;
+    private final PublisherGrpc.PublisherStub publisherStub;
 
     public GooglePubsubProducer(GooglePubsubEndpoint endpoint) throws Exception {
         super(endpoint);
@@ -55,6 +56,11 @@ public class GooglePubsubProducer extends DefaultAsyncProducer {
         }
 
         logger = LoggerFactory.getLogger(loggerId);
+
+        publisherStub = PublisherGrpc.newStub(
+                getEndpoint().getChannelProvider().getChannel()
+        );
+
     }
 
     /**
@@ -112,7 +118,7 @@ public class GooglePubsubProducer extends DefaultAsyncProducer {
     private void sendMessages(Exchange exchange, AsyncCallback callback) throws Exception {
         List<Exchange> exchanges = prepareExchangeList(exchange);
 
-        GooglePubsubEndpoint endpoint = (GooglePubsubEndpoint) getEndpoint();
+        GooglePubsubEndpoint endpoint = getEndpoint();
         TopicName topicName = TopicName.create(endpoint.getProjectId(), endpoint.getDestinationName());
 
         List<PubsubMessage> messages = new ArrayList<>();
@@ -142,9 +148,7 @@ public class GooglePubsubProducer extends DefaultAsyncProducer {
 
         requestBuilder.setTopicWithTopicName(topicName);
 
-        PublisherGrpc.newStub(
-                getEndpoint().getComponent().getChannelProvider().getChannel()
-        ).publish(requestBuilder.build(), new StreamObserver<PublishResponse>() {
+        publisherStub.publish(requestBuilder.build(), new StreamObserver<PublishResponse>() {
             private List<String> messageIds = new ArrayList<>(exchanges.size());
 
             @Override

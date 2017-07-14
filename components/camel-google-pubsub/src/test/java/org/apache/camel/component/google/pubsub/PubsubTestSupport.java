@@ -20,10 +20,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
-import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.api.client.util.Strings;
-import com.google.api.gax.core.CredentialsProvider;
 import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.api.gax.grpc.ApiException;
 import com.google.api.gax.grpc.ChannelProvider;
@@ -46,21 +44,18 @@ import org.slf4j.LoggerFactory;
 
 public class PubsubTestSupport extends CamelTestSupport {
 
-    public static final String CHANNEL_ENDPOINT;
     public static final Boolean CHANNEL_IS_PLAIN_TEXT;
     public static final String CREDENTIALS_JSON_FILE;
 
     public static final String SERVICE_KEY;
     public static final String SERVICE_ACCOUNT;
     public static final String PROJECT_ID;
-    public static final String SERVICE_HOST;
-    public static final int SERVICE_PORT;
+    public static final String SERVICE_ENDPOINT;
 
     private static final Logger LOG = LoggerFactory.getLogger(PubsubTestSupport.class);
 
     static {
         Properties testProperties = loadProperties();
-        CHANNEL_ENDPOINT = testProperties.getProperty("test.channel.endpoint");
         CHANNEL_IS_PLAIN_TEXT = Boolean.valueOf(testProperties.getProperty("test.channel.plainText"));
         CREDENTIALS_JSON_FILE = testProperties.getProperty("test.credentials.file");
 
@@ -68,14 +63,13 @@ public class PubsubTestSupport extends CamelTestSupport {
         SERVICE_KEY = testProperties.getProperty("service.key");
         SERVICE_ACCOUNT = testProperties.getProperty("service.account");
         PROJECT_ID = testProperties.getProperty("project.id");
-        SERVICE_HOST = testProperties.getProperty("test.channel.host");
-        SERVICE_PORT = Integer.parseInt(testProperties.getProperty("test.channel.port", "8085"));
+        SERVICE_ENDPOINT = testProperties.getProperty("test.pubsubEndpoint");
     }
 
     private static ChannelProvider createChannelProvider(ExecutorProvider executorProvider) {
         ChannelProvider channelProvider;
         if (CHANNEL_IS_PLAIN_TEXT) {
-            channelProvider = PlainTextChannelProvider.create(CHANNEL_ENDPOINT);
+            channelProvider = PlainTextChannelProvider.create(SERVICE_ENDPOINT);
         } else {
             Credentials credentials;
 
@@ -103,7 +97,7 @@ public class PubsubTestSupport extends CamelTestSupport {
                             executorProvider == null ? TopicAdminSettings.defaultExecutorProviderBuilder().build() : executorProvider
                     )
                     .setCredentialsProvider(FixedCredentialsProvider.create(credentials))
-                    .setEndpoint(Strings.isNullOrEmpty(CHANNEL_ENDPOINT) ? TopicAdminSettings.getDefaultEndpoint() : CHANNEL_ENDPOINT)
+                    .setEndpoint(Strings.isNullOrEmpty(SERVICE_ENDPOINT) ? TopicAdminSettings.getDefaultEndpoint() : SERVICE_ENDPOINT)
                     .build();
         }
         return channelProvider;
@@ -123,25 +117,16 @@ public class PubsubTestSupport extends CamelTestSupport {
         return testProperties;
     }
 
-    protected void addPubsubComponent(CamelContext context) throws Exception {
-        CredentialsProvider credentialsProvider = new GooglePubsubCredentialsProviderBuilder()
-                    .setServiceAccount(SERVICE_ACCOUNT)
-                     .setServiceAccountKey(SERVICE_KEY)
-                .build();
+    protected void addPubsubComponent(CamelContext context) {
+
+        GooglePubsubConnectionFactory cf = new GooglePubsubConnectionFactory()
+                .setServiceAccount(SERVICE_ACCOUNT)
+                .setServiceAccountKey(SERVICE_KEY)
+                .setPubsubEndpoint(SERVICE_ENDPOINT)
+                .setIsPlainTextChannel(CHANNEL_IS_PLAIN_TEXT);
 
         GooglePubsubComponent component = new GooglePubsubComponent();
-        component.setChannelProvider(createChannelProvider(new ExecutorProvider() {
-            @Override
-            public boolean shouldAutoClose() {
-                return true;
-            }
-
-            @Override
-            public ScheduledExecutorService getExecutor() {
-                return context.getExecutorServiceManager().newDefaultScheduledThreadPool(this, "channel-provider");
-            }
-        }));
-        component.setCredentialsProvider(credentialsProvider);
+        component.setConnectionFactory(cf);
 
         context.addComponent("google-pubsub", component);
         context.addComponent("properties", new PropertiesComponent("ref:prop"));

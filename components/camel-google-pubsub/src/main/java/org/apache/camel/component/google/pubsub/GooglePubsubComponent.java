@@ -33,6 +33,7 @@ import org.apache.camel.impl.UriEndpointComponent;
  */
 public class GooglePubsubComponent extends DefaultComponent {
 
+    private GooglePubsubConnectionFactory connectionFactory;
     private ChannelProvider channelProvider;
     private CredentialsProvider credentialsProvider;
     private ExecutorProvider executorProvider;
@@ -69,13 +70,17 @@ public class GooglePubsubComponent extends DefaultComponent {
      * - the path to the key file
      * - the Service Account Key / Email pair
      */
-    public ChannelProvider getChannelProvider() {
+    public synchronized ChannelProvider getChannelProvider() throws Exception {
         if (channelProvider == null) {
-            channelProvider = TopicAdminSettings
-                    .defaultChannelProviderBuilder()
-                    .setExecutorProvider(getExecutorProvider())
-                    .setCredentialsProvider(getCredentialsProvider())
-                    .build();
+            if (connectionFactory != null) {
+                channelProvider = connectionFactory.getChannelProvider(getExecutorProvider());
+            } else {
+                channelProvider = TopicAdminSettings
+                        .defaultChannelProviderBuilder()
+                        .setExecutorProvider(getExecutorProvider())
+                        .setCredentialsProvider(getCredentialsProvider())
+                        .build();
+            }
         }
         return channelProvider;
     }
@@ -113,8 +118,21 @@ public class GooglePubsubComponent extends DefaultComponent {
         return executorProvider;
     }
 
-    public void setExecutorProvider(ExecutorProvider executorProvider) {
-        this.executorProvider = executorProvider;
+    /**
+     * Sets the connection factory to use:
+     * provides the ability to explicitly manage connection credentials:
+     * - the path to the key file
+     * - the Service Account Key / Email pair
+     */
+    public GooglePubsubConnectionFactory getConnectionFactory() {
+        if (connectionFactory == null) {
+            connectionFactory = new GooglePubsubConnectionFactory();
+        }
+        return connectionFactory;
+    }
+
+    public void setConnectionFactory(GooglePubsubConnectionFactory connectionFactory) {
+        this.connectionFactory = connectionFactory;
     }
 }
 
