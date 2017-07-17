@@ -35,7 +35,6 @@ public class GooglePubsubComponent extends DefaultComponent {
 
     private GooglePubsubConnectionFactory connectionFactory;
     private ChannelProvider channelProvider;
-    private CredentialsProvider credentialsProvider;
     private ExecutorProvider executorProvider;
 
     public GooglePubsubComponent() {
@@ -78,7 +77,6 @@ public class GooglePubsubComponent extends DefaultComponent {
                 channelProvider = TopicAdminSettings
                         .defaultChannelProviderBuilder()
                         .setExecutorProvider(getExecutorProvider())
-                        .setCredentialsProvider(getCredentialsProvider())
                         .build();
             }
         }
@@ -87,17 +85,6 @@ public class GooglePubsubComponent extends DefaultComponent {
 
     public void setChannelProvider(ChannelProvider channelProvider) {
         this.channelProvider = channelProvider;
-    }
-
-    public CredentialsProvider getCredentialsProvider() {
-        if (credentialsProvider == null) {
-            credentialsProvider = TopicAdminSettings.defaultCredentialsProviderBuilder().build();
-        }
-        return credentialsProvider;
-    }
-
-    public void setCredentialsProvider(CredentialsProvider credentialsProvider) {
-        this.credentialsProvider = credentialsProvider;
     }
 
     public ExecutorProvider getExecutorProvider() {

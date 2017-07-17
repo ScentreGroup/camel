@@ -16,8 +16,7 @@
  */
 package org.apache.camel.component.google.pubsub;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.api.client.repackaged.com.google.common.base.Strings;
 import com.google.pubsub.v1.PubsubMessage;
@@ -42,13 +41,14 @@ class GooglePubsubConsumer extends DefaultConsumer {
 
     private final Processor processor;
     private final Synchronization ackStrategy;
+    private final StreamObserver<PullResponse> streamObserver;
     private SubscriberGrpc.SubscriberStub subscriberStub;
-
 
     GooglePubsubConsumer(GooglePubsubEndpoint endpoint, Processor processor) throws Exception {
         super(endpoint, processor);
         this.processor = processor;
-        this.ackStrategy = new ExchangeAckTransaction(getEndpoint());
+        this.ackStrategy = new ExchangeAckTransaction(endpoint);
+        this.streamObserver = createStreamObserver();
 
         String loggerId = endpoint.getLoggerId();
 
@@ -98,66 +98,61 @@ class GooglePubsubConsumer extends DefaultConsumer {
         PullRequest pullRequest = PullRequest.newBuilder()
                 .setSubscriptionWithSubscriptionName(subscriptionFullName)
                 .setMaxMessages(getEndpoint().getMaxMessagesPerPoll())
+                .setReturnImmediately(false)
                 .build();
 
-
-        ManagedChannel channel;
-        try {
-            channel = getEndpoint().getChannelProvider().getChannel();
-        } catch (Exception e) {
-            localLog.error("Failure getting channel from PubSub : ", e);
-            return;
-        }
-
-        subscriberStub
-                .pull(pullRequest, new StreamObserver<PullResponse>() {
-                    @Override
-                    public void onNext(PullResponse value) {
-                        for (ReceivedMessage receivedMessage : value.getReceivedMessagesList()) {
-                            PubsubMessage pubsubMessage = receivedMessage.getMessage();
-
-                            byte[] body = pubsubMessage.getData().toByteArray();
-
-                            if (localLog.isTraceEnabled()) {
-                                localLog.trace("Received message ID : {}", pubsubMessage.getMessageId());
-                            }
-
-                            Exchange exchange = getEndpoint().createExchange();
-                            exchange.getIn().setBody(body);
-
-                            exchange.getIn().setHeader(GooglePubsubConstants.ACK_ID, receivedMessage.getAckId());
-                            exchange.getIn().setHeader(GooglePubsubConstants.MESSAGE_ID, pubsubMessage.getMessageId());
-                            exchange.getIn().setHeader(GooglePubsubConstants.PUBLISH_TIME, pubsubMessage.getPublishTime());
-
-                            if (null != receivedMessage.getMessage().getAttributesMap()) {
-                                exchange.getIn().setHeader(GooglePubsubConstants.ATTRIBUTES, receivedMessage.getMessage().getAttributesMap());
-                            }
-
-                            if (getEndpoint().getAckMode() != GooglePubsubConstants.AckMode.NONE) {
-                                exchange.addOnCompletion(ackStrategy);
-                            }
-
-                            try {
-                                processor.process(exchange);
-                            } catch (Throwable e) {
-                                exchange.setException(e);
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onError(Throwable t) {
-                        localLog.error("Failure while retrieving messages from PubSub : ", t);
-                    }
-
-                    @Override
-                    public void onCompleted() {
-                        localLog.trace("Completed retrieving messages - poll again");
-                        doPoll();
-                    }
-                });
+        localLog.trace("Starting pull request from PubSub");
+        subscriberStub.pull(pullRequest, streamObserver);
     }
 
+    private StreamObserver<PullResponse> createStreamObserver() {
+        return new StreamObserver<PullResponse>() {
+            @Override
+            public void onNext(PullResponse value) {
+                for (ReceivedMessage receivedMessage : value.getReceivedMessagesList()) {
+                    PubsubMessage pubsubMessage = receivedMessage.getMessage();
+
+                    byte[] body = pubsubMessage.getData().toByteArray();
+
+                    if (localLog.isTraceEnabled()) {
+                        localLog.trace("Received message ID : {}", pubsubMessage.getMessageId());
+                    }
+
+                    Exchange exchange = getEndpoint().createExchange();
+                    exchange.getIn().setBody(body);
+
+                    exchange.getIn().setHeader(GooglePubsubConstants.ACK_ID, receivedMessage.getAckId());
+                    exchange.getIn().setHeader(GooglePubsubConstants.MESSAGE_ID, pubsubMessage.getMessageId());
+                    exchange.getIn().setHeader(GooglePubsubConstants.PUBLISH_TIME, pubsubMessage.getPublishTime());
+
+                    if (null != receivedMessage.getMessage().getAttributesMap()) {
+                        exchange.getIn().setHeader(GooglePubsubConstants.ATTRIBUTES, receivedMessage.getMessage().getAttributesMap());
+                    }
+
+                    if (getEndpoint().getAckMode() != GooglePubsubConstants.AckMode.NONE) {
+                        exchange.addOnCompletion(ackStrategy);
+                    }
+
+                    try {
+                        processor.process(exchange);
+                    } catch (Throwable e) {
+                        exchange.setException(e);
+                    }
+                }
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                localLog.error("Failure while retrieving messages from PubSub : ", t);
+                doPoll();
+            }
+
+            @Override
+            public void onCompleted() {
+                doPoll();
+            }
+        };
+    }
 
     @Override
     public GooglePubsubEndpoint getEndpoint() {

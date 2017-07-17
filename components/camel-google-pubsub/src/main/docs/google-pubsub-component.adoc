@@ -13,6 +13,7 @@ The implementation make use of the Google gRPC client libraries.
 Maven users will need to add the following dependency to their pom.xml
 for this component:
 
+[source,xml]
 ------------------------------------------------------
 <dependency>
     <groupId>org.apache.camel</groupId>
@@ -23,97 +24,59 @@ for this component:
 
 ------------------------------------------------------
 
-[[gRPC configuration]]
+[[GooglePubsub-AuthenticationConfiguration]]
+### Authentication Configuration
 
-The following gRPC configuration options can be set via:
-* ChannelProvider
-* CredentialsProvider
-* GooglePubsubConnectionFactory
+Google Pubsub component authentication is targeted for use with the GCP Service Accounts.
+For more information please refer to https://cloud.google.com/docs/authentication[Google Cloud Platform Auth Guide]
 
-The GooglePubsubConnectionFactory is provided for backward compatibility to the GooglePubsub rest implementation.
-Settings will be taken from GooglePubsubConnectionFactory if specified overriding ChannelProvider and
-CredentialsProvider.
+Google security credentials can be set explicitly via one of the two options when using the `GooglePubsubConnectionFactory`:
 
-The ChannelProvider gets the credentials from the CredentialsProvider.
+* Service Account Email and Service Account Key (PEM format)
+* GCP credentials file location
 
-If no ChannelProvider is specified a default ChannelProvider will be created using the configured
-CredentialsProvider.
+If both are set, the Service Account Email/Key will take precedence.
 
-If no CredentialsProvider is supplied a default CredentialsProvider will be created which uses the
-default Google Application credentials.
+Or implicitly, where the connection factory falls back on
+https://developers.google.com/identity/protocols/application-default-credentials#howtheywork[Application Default Credentials].
 
+*OBS!* The location of the default credentials file is configurable - via GOOGLE_APPLICATION_CREDENTIALS environment variable.
 
-[[[GooglePubsub-AuthenticationConfiguration]]
- Authentication Configuration
+Service Account Email and Service Account Key can be found in the GCP JSON credentials file as client_email and private_key respectively.
 
- Google Pubsub component authentication is targeted for use with the GCP Service Accounts.
- For more information please refer to https://cloud.google.com/docs/authentication[Google Cloud Platform Auth Guide]
+For advanced configuration options a `ChannelProvider` can be supplied allowing full control over credentials.
 
- Google security credentials can be set explicitly via one of the two options:
+### URI Format
 
- * Service Account Email and Service Account Key (PEM format)
- * GCP credentials file location
+[source,java]
+-------------------------------------
+google-pubsub:projectId:destinationName[?options]
+-------------------------------------
 
- If both are set, the Service Account Email/Key will take precedence.
+Where `projectId` is the google cloud project id and `destinationName` is the
+pubsub topic or subscription name.
 
- Or implicitly, where the connection factory falls back on
- https://developers.google.com/identity/protocols/application-default-credentials#howtheywork[Application Default Credentials].
-
- *OBS!* The location of the default credentials file is configurable - via GOOGLE_APPLICATION_CREDENTIALS environment variable.
-
- Service Account Email and Service Account Key can be found in the GCP JSON credentials file as client_email and private_key respectively.
-
- Alternatively a CredentialsProvider can be supplied.
-
- ### URI Format
-
- The GooglePubsub Component uses the following URI format:
-
- --------------------------------------------------------
-         google-pubsub://project-id:destinationName?[options]
- --------------------------------------------------------
-
- Destination Name can be either a topic or a subscription name.
-
- ### GooglePubsubComponent
-
- // component options: START
- The Google Pubsub component supports 3 options which are listed below.
-
-
+// component options: START
+### Component Options
 
 [width="100%",cols="2,5,^1,2",options="header"]
 |=======================================================================
 | Name | Description | Default | Type
-| **connectionFactory** (common) | Sets the connection factory to use: provides the ability to explicitly manage connection credentials: - the path to the key file - the Service Account Key / Email pair |  | GooglePubsubConnection Factory
+| **connectionFactory** (common) | Sets the connection factory to use: provides the ability to explicitly manage connection credentials: - the path to the key file - the Service Account Key / Email pair. Will take precedence over `channelProvider`. |  | GooglePubsubConnection Factory
 | **channelProvider** (common) | Sets the channel provider to use: provides the ability to explicitly set the gRPC channel provider |  | com.google.api.gax.grpc.ChannelProvider
 | **resolveProperty Placeholders** (advanced) | Whether the component should resolve property placeholders on itself when starting. Only properties which are of String type can use property placeholders. | true | boolean
 |=======================================================================
 // component options: END
 
-// endpoint options: START
-The Google Pubsub endpoint is configured using URI syntax:
 
-    google-pubsub:projectId:destinationName
 
-with the following path and query parameters:
-
-#### Path Parameters (2 parameters):
-
-[width="100%",cols="2,5,^1,2",options="header"]
-|=======================================================================
-| Name | Description | Default | Type
-| **projectId** | *Required* Project Id |  | String
-| **destinationName** | *Required* Destination Name |  | String
-|=======================================================================
-
-#### Query Parameters (9 parameters):
+### Endpoint Options
 
 [width="100%",cols="2,5,^1,2",options="header"]
 |=======================================================================
 | Name | Description | Default | Type
 | **ackMode** (common) | AUTO = exchange gets ack'ed/nack'ed on completion. NONE = downstream process has to ack/nack explicitly | AUTO | AckMode
-| **concurrentConsumers** (common) | The number of parallel streams consuming from the subscription | 1 | Integer
+| **concurrentConsumers** (consumer) | The number of parallel streams consuming from the subscription | 1 | Integer
 | **connectionFactory** (common) | ConnectionFactory to obtain connection to PubSub Service. If non provided the default will be used. |  | GooglePubsubConnection Factory
 | **loggerId** (common) | Logger ID to use when a match to the parent route required |  | String
 | **maxMessagesPerPoll** (common) | The max number of messages to receive from the server in a single API call | 1 | Integer
