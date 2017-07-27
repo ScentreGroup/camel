@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 
 public class GoogleBigQueryConnectionFactory {
 
-    private static JsonFactory jsonFactory = new JacksonFactory();
+    private static final JsonFactory JSON_FACTORY = new JacksonFactory();
 
     private final Logger logger = LoggerFactory.getLogger(GoogleBigQueryConnectionFactory.class);
 
@@ -74,7 +74,7 @@ public class GoogleBigQueryConnectionFactory {
 
     private Bigquery buildClient() throws Exception {
         return buildClient(GoogleNetHttpTransport.newTrustedTransport());
-    };
+    }
 
     private Bigquery buildClient(HttpTransport httpTransport) throws Exception {
 
@@ -101,7 +101,7 @@ public class GoogleBigQueryConnectionFactory {
             credential = createDefault();
         }
 
-        Bigquery.Builder builder = new Bigquery.Builder(httpTransport, jsonFactory, credential)
+        Bigquery.Builder builder = new Bigquery.Builder(httpTransport, JSON_FACTORY, credential)
                 .setApplicationName("camel-google-bigquery");
 
         // Local emulator, SOCKS proxy, etc.
@@ -126,7 +126,7 @@ public class GoogleBigQueryConnectionFactory {
     private GoogleCredential createDefault() throws Exception {
         GoogleCredential credential = GoogleCredential.getApplicationDefault();
 
-        Collection pubSubScopes = Collections.singletonList(BigqueryScopes.BIGQUERY);
+        Collection<String> pubSubScopes = Collections.singletonList(BigqueryScopes.BIGQUERY);
 
         if (credential.createScopedRequired()) {
             credential = credential.createScoped(pubSubScopes);
@@ -137,22 +137,20 @@ public class GoogleBigQueryConnectionFactory {
 
     private GoogleCredential createFromAccountKeyPair(HttpTransport httpTransport) {
         try {
-            GoogleCredential credential = new GoogleCredential.Builder()
+            return new GoogleCredential.Builder()
                     .setTransport(httpTransport)
-                    .setJsonFactory(jsonFactory)
+                    .setJsonFactory(JSON_FACTORY)
                     .setServiceAccountId(serviceAccount)
                     .setServiceAccountScopes(BigqueryScopes.all())
                     .setServiceAccountPrivateKey(getPrivateKeyFromString(serviceAccountKey))
                     .build();
-
-            return credential;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     private PrivateKey getPrivateKeyFromString(String serviceKeyPem) {
-        PrivateKey privateKey = null;
+        PrivateKey privateKey;
         try {
             String privKeyPEM = serviceKeyPem.replace("-----BEGIN PRIVATE KEY-----", "")
                                              .replace("-----END PRIVATE KEY-----", "")

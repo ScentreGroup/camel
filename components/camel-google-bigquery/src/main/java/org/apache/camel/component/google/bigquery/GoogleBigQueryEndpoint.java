@@ -1,3 +1,19 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.camel.component.google.bigquery;
 
 import java.io.InputStream;
@@ -36,18 +52,15 @@ import org.slf4j.LoggerFactory;
  * Another consideration is that exceptions are not handled within the class. They are expected to bubble up and be handled
  * by Camel.
  */
-@UriEndpoint(scheme = "bigquery",title = "BigQuery", syntax = "bigquery:projectId:dataSetId[:tableName]")
+@UriEndpoint(scheme = "bigquery", title = "BigQuery", syntax = "bigquery:projectId:dataSetId[:tableName]")
 public class GoogleBigQueryEndpoint extends DefaultEndpoint {
-
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
-
     @UriParam
     protected final GoogleBigQueryConfiguration configuration;
 
-    private Bigquery bigquery;
-    private String uri;
+    private final Bigquery bigquery;
+    private final String uri;
 
-    private Map<String, Boolean> verifiedTables = new ConcurrentHashMap<>();
+    private final Map<String, Boolean> verifiedTables = new ConcurrentHashMap<>();
     private ExecutorService executorService;
 
     protected GoogleBigQueryEndpoint(String uri, Bigquery bigquery, GoogleBigQueryConfiguration configuration) {
@@ -79,7 +92,7 @@ public class GoogleBigQueryEndpoint extends DefaultEndpoint {
         throw new UnsupportedOperationException("Cannot consume from the BigQuery endpoint: " + getEndpointUri());
     }
 
-    void checkOrCreateBQTable(String tableId) throws Exception {
+    void checkOrCreateBQTable(String tableId) {
         if (configuration.isCreateTable()) {
             verifiedTables.computeIfAbsent(tableId, (tableName) -> {
                 try {
@@ -94,7 +107,7 @@ public class GoogleBigQueryEndpoint extends DefaultEndpoint {
         }
     }
 
-    private String createBqTable(String actualTableName) throws Exception {
+    private void createBqTable(String actualTableName) throws Exception {
         TableReference reference = new TableReference()
             .setTableId(actualTableName)
             .setDatasetId(configuration.getDatasetId())
@@ -106,14 +119,13 @@ public class GoogleBigQueryEndpoint extends DefaultEndpoint {
             .setSchema(schema);
         if (configuration.isPartitioned()) {
             TimePartitioning timePartitioning = new TimePartitioning();
-            // Onyl type supported currently
+            // Only type supported currently
             timePartitioning.setType("DAY");
             table = table.setTimePartitioning(timePartitioning);
         }
         bigquery.tables()
             .insert(configuration.getProjectId(), configuration.getDatasetId(), table)
             .execute();
-        return actualTableName;
     }
 
     // Google API is paginated.
@@ -123,9 +135,9 @@ public class GoogleBigQueryEndpoint extends DefaultEndpoint {
     //    suspicion is that it might be set to 500.
     private boolean checkBqTableExists(String tableName) throws Exception {
         QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setQuery("SELECT COUNT(1) AS cnt\n" +
-                "FROM " + configuration.getDatasetId() + ".__TABLES_SUMMARY__\n" +
-                "WHERE table_id = '" + tableName + "'");
+        queryRequest.setQuery("SELECT COUNT(1) AS cnt\n"
+                + "FROM " + configuration.getDatasetId() + ".__TABLES_SUMMARY__\n"
+                + "WHERE table_id = '" + tableName + "'");
 
         Bigquery.Jobs.Query query = bigquery.jobs().query(configuration.getProjectId(), queryRequest);
         QueryResponse response = query.execute();

@@ -1,4 +1,4 @@
-## Camel Google BigQuery Component testing
+mvn## Camel Google BigQuery Component testing
 
 The unit tests provided are somewhat limited.
 Due to the nature of the component, it needs to be tested against a server. To assist with this task Google has provided

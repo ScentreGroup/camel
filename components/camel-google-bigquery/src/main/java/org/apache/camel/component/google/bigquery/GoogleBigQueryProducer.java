@@ -1,3 +1,19 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.camel.component.google.bigquery;
 
 import java.util.ArrayList;
@@ -11,7 +27,6 @@ import com.google.api.services.bigquery.model.TableRow;
 import org.apache.camel.AsyncCallback;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultAsyncProducer;
-import org.apache.camel.impl.DefaultProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,17 +35,18 @@ import org.slf4j.LoggerFactory;
  */
 public class GoogleBigQueryProducer extends DefaultAsyncProducer {
 
-    private Logger logger;
-    private GoogleBigQueryConfiguration configuration;
+    private final Logger logger;
+    private final GoogleBigQueryConfiguration configuration;
 
-    public GoogleBigQueryProducer(GoogleBigQueryEndpoint endpoint, GoogleBigQueryConfiguration configuration) throws Exception {
+    public GoogleBigQueryProducer(GoogleBigQueryEndpoint endpoint, GoogleBigQueryConfiguration configuration) {
         super(endpoint);
 
         this.configuration = configuration;
 
         String loggerId = configuration.getLoggerId();
-        if (loggerId == null || loggerId.trim().isEmpty())
+        if (loggerId == null || loggerId.trim().isEmpty()) {
             loggerId = this.getClass().getName();
+        }
 
         logger = LoggerFactory.getLogger(loggerId);
     }
@@ -43,7 +59,7 @@ public class GoogleBigQueryProducer extends DefaultAsyncProducer {
      */
     private static List<Exchange> prepareExchangeList(Exchange exchange) {
 
-        List<Exchange> entryList = null;
+        List<Exchange> entryList;
 
         if (null == exchange.getProperty(Exchange.GROUPED_EXCHANGE)) {
             entryList = new ArrayList<>();
@@ -74,7 +90,6 @@ public class GoogleBigQueryProducer extends DefaultAsyncProducer {
     public void process(Exchange exchange) throws Exception {
         List<Exchange> exchanges = prepareExchangeList(exchange);
 
-        List<TableDataInsertAllRequest.Rows> apiRequestRows = new ArrayList<>();
         List<Exchange> processGroup = new ArrayList<>();
         String tablename = null;
         String suffix = null;
@@ -110,7 +125,7 @@ public class GoogleBigQueryProducer extends DefaultAsyncProducer {
         for (Exchange ex: exchanges) {
             Object entryObject = ex.getIn().getBody();
             if (entryObject instanceof List) {
-                for(Map<String, Object> entry: (List<Map<String, Object>>) entryObject) {
+                for (Map<String, Object> entry: (List<Map<String, Object>>) entryObject) {
                     apiRequestRows.add(createRowRequest(null, entry));
                 }
             } else if (entryObject instanceof Map) {
@@ -131,7 +146,7 @@ public class GoogleBigQueryProducer extends DefaultAsyncProducer {
 
         String insertId = null;
         if (configuration.getUseAsInsertId() != null) {
-            Object id = (String) apiRequestRows.get(0).get(configuration.getUseAsInsertId());
+            Object id = apiRequestRows.get(0).get(configuration.getUseAsInsertId());
             if (id instanceof String) {
                 insertId = (String) id;
             }
