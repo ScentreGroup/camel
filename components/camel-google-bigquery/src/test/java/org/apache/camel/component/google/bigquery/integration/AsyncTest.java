@@ -1,26 +1,25 @@
 package org.apache.camel.component.google.bigquery.integration;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import com.google.api.services.bigquery.model.QueryRequest;
-import com.google.api.services.bigquery.model.QueryResponse;
 import org.apache.camel.Endpoint;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.google.bigquery.BigQueryTestSupport;
-import org.apache.camel.component.google.bigquery.GoogleBigQueryConstants;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
-import org.apache.camel.test.junit4.CamelTestSupport;
 import org.junit.Test;
 
-public class SingleRowTest extends BigQueryTestSupport {
-    private static final String TABLE_ID = "singlerow";
+public class AsyncTest extends BigQueryTestSupport {
+    private static final String TABLE_ID = "asynctest";
 
     @EndpointInject(uri = "direct:in")
     private Endpoint directIn;
@@ -39,8 +38,13 @@ public class SingleRowTest extends BigQueryTestSupport {
         return new RouteBuilder() {
             public void configure() {
                 from(directIn)
-                        .routeId("SingleRow")
-                        .to(bigqueryEndpoint)
+                        .to("seda:seda");
+                from("seda:seda")
+                        .routeId("Async")
+                        //.threads(10)
+
+                        .inOnly(bigqueryEndpoint)
+                        .log(LoggingLevel.INFO, "To sendresult")
                 .to(sendResult);
             }
         };
@@ -48,20 +52,26 @@ public class SingleRowTest extends BigQueryTestSupport {
 
     @Test
     public void singleMessage() throws Exception {
-        Exchange exchange = new DefaultExchange(context);
-        String uuidCol1 = UUID.randomUUID().toString();
-        String uuidCol2 = UUID.randomUUID().toString();
+        List<Map> objects = new ArrayList<>();
+        for(int i = 0; i < 10; i++) {
+            Exchange exchange = new DefaultExchange(context);
+            String uuidCol1 = UUID.randomUUID().toString();
+            String uuidCol2 = UUID.randomUUID().toString();
 
-        Map<String, String> object = new HashMap<>();
-        object.put("col1", uuidCol1);
-        object.put("col2", uuidCol2);
-        exchange.getIn().setBody(object);
+            Map<String, String> object = new HashMap<>();
+            object.put("col1", uuidCol1);
+            object.put("col2", uuidCol2);
+            objects.add(object);
+            exchange.getIn().setBody(object);
+            producer.send(exchange);
+        }
+        sendResult.expectedMessageCount(10);
 
-        sendResult.expectedMessageCount(1);
-        producer.send(exchange);
         sendResult.assertIsSatisfied(4000);
 
-        assertRowExist(TABLE_ID, object);
+        for (Map object: objects) {
+            assertRowExist(TABLE_ID, object);
+        }
     }
 
 }

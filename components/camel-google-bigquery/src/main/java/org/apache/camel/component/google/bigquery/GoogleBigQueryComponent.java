@@ -37,16 +37,19 @@ public class GoogleBigQueryComponent extends DefaultComponent {
             throw new IllegalArgumentException("Google BigQuery Endpoint format \"projectId:datasetId:tableName\"");
         }
 
-        if (bigQuery == null)
+        GoogleBigQueryConfiguration configuration = new GoogleBigQueryConfiguration();
+        setProperties(configuration, parameters);
+        configuration.parseRemaining(remaining);
+
+        if (configuration.getConnectionFactory() == null) {
+            configuration.setConnectionFactory(getConnectionFactory());
+        }
+
+        if (bigQuery == null) {
             bigQuery = getConnection();
+        }
 
-        GoogleBigQueryEndpoint bigQueryEndpoint = new GoogleBigQueryEndpoint(uri, bigQuery);
-        int c = 0;
-        bigQueryEndpoint.setProjectId(parts[c++]);
-        bigQueryEndpoint.setDatasetId(parts[c++]);
-        bigQueryEndpoint.setTableId(parts[c++]);
-
-        setProperties(bigQueryEndpoint, parameters);
+        GoogleBigQueryEndpoint bigQueryEndpoint = new GoogleBigQueryEndpoint(uri, bigQuery, configuration);
 
         return bigQueryEndpoint;
     }

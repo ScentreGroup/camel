@@ -1,23 +1,24 @@
 package org.apache.camel.component.google.bigquery;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.TimeZone;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.io.InputStream;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 
 import com.google.api.services.bigquery.Bigquery;
+import com.google.api.services.bigquery.model.QueryRequest;
+import com.google.api.services.bigquery.model.QueryResponse;
 import com.google.api.services.bigquery.model.Table;
-import com.google.api.services.bigquery.model.TableList;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableSchema;
+import com.google.api.services.bigquery.model.TimePartitioning;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
+import org.apache.camel.util.ResourceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,44 +36,41 @@ import org.slf4j.LoggerFactory;
  * Another consideration is that exceptions are not handled within the class. They are expected to bubble up and be handled
  * by Camel.
  */
-@UriEndpoint(scheme = "bigquery",title = "BigQuery", syntax = "bigquery:tablename")
+@UriEndpoint(scheme = "bigquery",title = "BigQuery", syntax = "bigquery:projectId:dataSetId[:tableName]")
 public class GoogleBigQueryEndpoint extends DefaultEndpoint {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
+    @UriParam
+    protected final GoogleBigQueryConfiguration configuration;
+
     private Bigquery bigquery;
     private String uri;
-    private String projectId;
-    private String datasetId;
-    private String tableId;
 
-    private HashMap<Long, String> verifiedTables = new HashMap<Long, String>();
+    private Map<String, Boolean> verifiedTables = new ConcurrentHashMap<>();
+    private ExecutorService executorService;
 
-    @UriParam(name = "loggerId")
-    private String loggerId = null;
-
-    @UriParam(name = "partitioned")
-    private Boolean partitioned = false;
-
-    @UriParam(name = "schemaLocation")
-    private String schemaLocation = "schema";
-
-    @UriParam(name = "connectionFactory", description = "ConnectionFactory to obtain connection to Bigquery Service. If non provided the default one will be used")
-    private GoogleBigQueryConnectionFactory connectionFactory;
-
-    protected GoogleBigQueryEndpoint(String uri, Bigquery bigquery) {
+    protected GoogleBigQueryEndpoint(String uri, Bigquery bigquery, GoogleBigQueryConfiguration configuration) {
         this.bigquery = bigquery;
         this.uri = uri;
+        this.configuration = configuration;
     }
 
     public Producer createProducer() throws Exception {
-        GoogleBigQueryProducer producer = new GoogleBigQueryProducer(this);
-
-        // If not partitioned we can create the table right away
-        // and the timestamp is ignored
-        if (!partitioned)
-            getTableNameForTimestamp( 0L );
-
+        GoogleBigQueryProducer producer = new GoogleBigQueryProducer(this, configuration);
+        if (configuration.getConcurrentConsumers() > 0) {
+            executorService = getCamelContext()
+                    .getExecutorServiceManager()
+                    .newFixedThreadPool(
+                            this,
+                            "camel-google-bigquery",
+                            configuration.getConcurrentConsumers()
+                    );
+        } else {
+            executorService = getCamelContext()
+                    .getExecutorServiceManager()
+                    .newDefaultThreadPool(this, "camel-google-bigquery");
+        }
         return producer;
     }
 
@@ -81,61 +79,41 @@ public class GoogleBigQueryEndpoint extends DefaultEndpoint {
         throw new UnsupportedOperationException("Cannot consume from the BigQuery endpoint: " + getEndpointUri());
     }
 
-    public String getTableNameForTimestamp(long millis) throws Exception {
-        // If the table is not partitioned, then the name has to be AS/IS
-        // Otherwise, using the number of days as the bucket:
-        // With dividing a whole by a whole, the fractionals are dropped
-        Long bucket = partitioned ? millis / 86400L : 0L;
-        String actualTableName = verifiedTables.get(bucket);
-
-        if (actualTableName == null) {
-            actualTableName = checkOrCreateBQTable(millis);
+    void checkOrCreateBQTable(String tableId) throws Exception {
+        if (configuration.isCreateTable()) {
+            verifiedTables.computeIfAbsent(tableId, (tableName) -> {
+                try {
+                    if (!checkBqTableExists(tableId)) {
+                        createBqTable(tableId);
+                    }
+                    return true;
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
         }
-        return actualTableName;
     }
 
-    private String checkOrCreateBQTable(long millis) throws Exception {
-        String actualTableName;
-        Long bucket = partitioned ? millis / 86400L : 0L;
-        // As we are relying on parallel processing to handle large loads
-        // we need to ensure that only one thread is creating the table
-        synchronized (this) {
-            // Double checking if the table has not been created by another process while this thread was blocked
-            // by synchronization.
-            if (verifiedTables.get(bucket) != null) {
-                return verifiedTables.get(bucket);
-            }
-
-            actualTableName = partitioned ? constructTableName(millis) : this.tableId;
-
-            if (!checkBqTableExists(actualTableName)) {
-                createBqTable(actualTableName);
-            }
-
-            verifiedTables.put(bucket, actualTableName);
-        }
-        return actualTableName;
-    }
-
-    private String constructTableName(Long millis) {
-        SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
-        format.setTimeZone(TimeZone.getTimeZone("UTC"));
-        Date date = new Date(millis);
-        return tableId + "_" + format.format(date);
-    }
-
-    private void createBqTable(String actualTableName) throws Exception {
+    private String createBqTable(String actualTableName) throws Exception {
         TableReference reference = new TableReference()
             .setTableId(actualTableName)
-            .setDatasetId(this.datasetId)
-            .setProjectId(this.projectId);
-        TableSchema schema = GoogleBigQuerySchemaReader.readDefinition(this.schemaLocation, this.tableId);
+            .setDatasetId(configuration.getDatasetId())
+            .setProjectId(configuration.getProjectId());
+        InputStream schemaInputStream = ResourceHelper.resolveMandatoryResourceAsInputStream(getCamelContext(), configuration.getSchemaLocation());
+        TableSchema schema = GoogleBigQuerySchemaReader.readDefinition(schemaInputStream);
         Table table = new Table()
             .setTableReference(reference)
             .setSchema(schema);
+        if (configuration.isPartitioned()) {
+            TimePartitioning timePartitioning = new TimePartitioning();
+            // Onyl type supported currently
+            timePartitioning.setType("DAY");
+            table = table.setTimePartitioning(timePartitioning);
+        }
         bigquery.tables()
-            .insert(projectId, datasetId, table)
+            .insert(configuration.getProjectId(), configuration.getDatasetId(), table)
             .execute();
+        return actualTableName;
     }
 
     // Google API is paginated.
@@ -144,24 +122,14 @@ public class GoogleBigQueryEndpoint extends DefaultEndpoint {
     // 2. Iterating through pages, in case there is still an implied limit on Max Results
     //    suspicion is that it might be set to 500.
     private boolean checkBqTableExists(String tableName) throws Exception {
-        Bigquery.Tables.List tablesRequest = bigquery.tables().list(projectId, datasetId);
-        tablesRequest.setMaxResults(5000L);
-        String nextPageToken= null;
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setQuery("SELECT COUNT(1) AS cnt\n" +
+                "FROM " + configuration.getDatasetId() + ".__TABLES_SUMMARY__\n" +
+                "WHERE table_id = '" + tableName + "'");
 
-        do {
-            TableList tableList = tablesRequest.execute();
-            if (tableList.getTables() == null) return false;
-
-            for (TableList.Tables table : tableList.getTables()) {
-                if (tableName.equals(table.getTableReference().getTableId()))
-                    return true;
-            }
-
-            nextPageToken = tableList.getNextPageToken();
-            tablesRequest.setPageToken( nextPageToken );
-
-        }while( null != nextPageToken);
-        return false;
+        Bigquery.Jobs.Query query = bigquery.jobs().query(configuration.getProjectId(), queryRequest);
+        QueryResponse response = query.execute();
+        return "1".equals(response.getRows().get(0).getF().get(0).getV());
     }
 
     public boolean isSingleton() {
@@ -172,44 +140,8 @@ public class GoogleBigQueryEndpoint extends DefaultEndpoint {
         return bigquery;
     }
 
-    public String getProjectId() {
-        return projectId;
-    }
-
-    public void setProjectId(String projectId) {
-        this.projectId = projectId;
-    }
-
-    public String getDatasetId() {
-        return datasetId;
-    }
-
-    public void setDatasetId(String datasetId) {
-        this.datasetId = datasetId;
-    }
-
-    public String getLoggerId() {
-        return loggerId;
-    }
-
-    public void setLoggerId(String loggerId) {
-        this.loggerId = loggerId;
-    }
-
-    public Boolean isPartitioned() {
-        return partitioned;
-    }
-
-    public void setPartitioned(Boolean partitioned) {
-        this.partitioned = partitioned;
-    }
-
-    public String getTableId() {
-        return tableId;
-    }
-
-    public void setTableId(String tableId) {
-        this.tableId = tableId;
+    public ExecutorService getExecutorService() {
+        return executorService;
     }
 
     @Override
@@ -222,16 +154,5 @@ public class GoogleBigQueryEndpoint extends DefaultEndpoint {
         return (GoogleBigQueryComponent)super.getComponent();
     }
 
-    /**
-     * ConnectionFactory to obtain connection to PubSub Service. If non provided the default will be used.
-     */
-    public GoogleBigQueryConnectionFactory getConnectionFactory() {
-        return (null == connectionFactory)
-                ? getComponent().getConnectionFactory()
-                : connectionFactory;
-    }
 
-    public void setConnectionFactory(GoogleBigQueryConnectionFactory connectionFactory) {
-        this.connectionFactory = connectionFactory;
-    }
 }

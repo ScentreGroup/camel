@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.services.bigquery.model.*;
+import org.apache.camel.util.ResourceHelper;
 
 /**
  * The class is used to read bigquery schema definitions
@@ -17,15 +18,11 @@ public class GoogleBigQuerySchemaReader {
 
     public static final String DDL_SUFFIX=".json";
 
-    public static TableSchema readDefinition(String location, String tableName) throws Exception {
+    public static TableSchema readDefinition(InputStream schemaInputStream) throws Exception {
         TableSchema schema = new TableSchema();
 
-        InputStream in = GoogleBigQuerySchemaReader.class
-            .getClassLoader()
-            .getResourceAsStream(location + "/" + tableName+DDL_SUFFIX);
-
         ObjectMapper mapper = new ObjectMapper();
-        List<TableFieldSchema> fields = mapper.readValue(in, ArrayList.class);
+        List<TableFieldSchema> fields = mapper.readValue(schemaInputStream, ArrayList.class);
 
         schema.setFields(fields);
 
