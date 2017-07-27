@@ -146,7 +146,7 @@ public class MockEndpointTest extends ContextTestSupport {
     public void testExpectationsAfterMessagesArrivePass() throws Exception {
         sendMessages(11, 12, 13, 14, 12);
 
-        MockEndpoint resultEndpoint = getMockEndpoint("mock:result"); 
+        MockEndpoint resultEndpoint = getMockEndpoint("mock:result");
         resultEndpoint.expectedMessageCount(5);
         resultEndpoint.assertIsSatisfied();
     }
@@ -156,8 +156,9 @@ public class MockEndpointTest extends ContextTestSupport {
 
         MockEndpoint resultEndpoint = getMockEndpoint("mock:result");
         resultEndpoint.expectedMessageCount(6);
-        // wait at most 2 sec to speedup unit testing 
-        resultEndpoint.setResultWaitTime(2000);
+        // wait at most 0.5 sec to speedup unit testing
+        resultEndpoint.setResultWaitTime(500);
+
         resultEndpoint.assertIsNotSatisfied();
     }
 
@@ -399,42 +400,42 @@ public class MockEndpointTest extends ContextTestSupport {
     public void testResolve() throws Exception {
         MockEndpoint mock = MockEndpoint.resolve(context, "mock:result");
         mock.expectedMessageCount(2);
-        mock.setResultWaitTime(500);
+        mock.setResultWaitTime(100);
 
         template.sendBody("direct:a", "Hello World");
 
         // should only be 1 message
         mock.assertIsNotSatisfied();
-        assertEquals(500, mock.getResultWaitTime());
+        assertEquals(100, mock.getResultWaitTime());
     }
 
     public void testResolveTimeout() throws Exception {
         MockEndpoint mock = MockEndpoint.resolve(context, "mock:result");
         mock.expectedMessageCount(2);
-        mock.setResultWaitTime(500);
+        mock.setResultWaitTime(100);
 
-        mock.assertIsNotSatisfied(1000);
+        mock.assertIsNotSatisfied(500);
 
         assertEquals(2, mock.getExpectedCount());
-        assertEquals(500, mock.getResultWaitTime());
+        assertEquals(100, mock.getResultWaitTime());
     }
 
     public void testSleepForEmptyTest() throws Exception {
         MockEndpoint mock = MockEndpoint.resolve(context, "mock:result");
         mock.expectedMessageCount(0);
-        mock.setSleepForEmptyTest(500);
+        mock.setSleepForEmptyTest(100);
         
         mock.assertIsSatisfied();
 
         assertEquals(0, mock.getExpectedCount());
-        assertEquals(500, mock.getSleepForEmptyTest());
+        assertEquals(100, mock.getSleepForEmptyTest());
     }
 
     public void testSleepForEmptyTestAssert() throws Exception {
         MockEndpoint mock = MockEndpoint.resolve(context, "mock:result");
         mock.expectedMessageCount(0);
 
-        mock.assertIsSatisfied(400);
+        mock.assertIsSatisfied(100);
 
         assertEquals(0, mock.getExpectedCount());
         assertEquals(0, mock.getSleepForEmptyTest());
@@ -519,6 +520,40 @@ public class MockEndpointTest extends ContextTestSupport {
         } catch (AssertionError e) {
             assertEquals("mock://result No property with name bar found for message: 0", e.getMessage());
         }
+    }
+    
+    public void testPropertyExpectedNull() throws Exception {
+        MockEndpoint mock = getMockEndpoint("mock:result");
+        mock.expectedMessageCount(1);
+        mock.expectedPropertyReceived("foo", null);
+
+        template.send("direct:a", new Processor() {
+            public void process(Exchange exchange) throws Exception {
+                exchange.setProperty("foo", 123);
+            }
+        });
+
+        mock.assertIsNotSatisfied();
+
+        resetMocks();
+
+        template.send("direct:a", new Processor() {
+            public void process(Exchange exchange) throws Exception {
+                exchange.setProperty("foo", null);
+            }
+        });
+
+        mock.assertIsSatisfied();
+
+        resetMocks();
+
+        template.send("direct:a", new Processor() {
+            public void process(Exchange exchange) throws Exception {
+                // no foo property
+            }
+        });
+
+        mock.assertIsSatisfied();
     }
 
     public void testPropertyInvalidValue() throws Exception {

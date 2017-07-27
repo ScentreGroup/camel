@@ -72,6 +72,7 @@ import org.apache.camel.spi.Registry;
 import org.apache.camel.spi.ReloadStrategy;
 import org.apache.camel.spi.RestConfiguration;
 import org.apache.camel.spi.RestRegistry;
+import org.apache.camel.spi.RouteController;
 import org.apache.camel.spi.RoutePolicyFactory;
 import org.apache.camel.spi.RouteStartupOrder;
 import org.apache.camel.spi.RuntimeEndpointRegistry;
@@ -305,6 +306,14 @@ public interface CamelContext extends SuspendableService, RuntimeConfiguration {
     <T> T hasService(Class<T> type);
 
     /**
+     * Has the given service type already been added to this CamelContext?
+     *
+     * @param type the class type
+     * @return the services instance or empty set.
+     */
+    <T> Set<T> hasServices(Class<T> type);
+
+    /**
      * Defers starting the service until {@link CamelContext} is (almost started) or started and has initialized all its prior services and routes.
      * <p/>
      * If {@link CamelContext} is already started then the service is started immediately.
@@ -504,6 +513,20 @@ public interface CamelContext extends SuspendableService, RuntimeConfiguration {
 
     // Route Management Methods
     //-----------------------------------------------------------------------
+
+    /**
+     * NOTE: experimental api
+     *
+     * @param routeController the route controller
+     */
+    void setRouteController(RouteController routeController);
+
+    /**
+     * NOTE: experimental api
+     *
+     * @return the route controller or null if not set.
+     */
+    RouteController getRouteController();
 
     /**
      * Method to signal to {@link CamelContext} that the process to initialize setup routes is in progress.

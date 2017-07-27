@@ -73,6 +73,7 @@ public interface Exchange {
 
     String AUTHENTICATION                   = "CamelAuthentication";
     String AUTHENTICATION_FAILURE_POLICY_ID = "CamelAuthenticationFailurePolicyId";
+    @Deprecated
     String ACCEPT_CONTENT_TYPE              = "CamelAcceptContentType";
     String AGGREGATED_SIZE                  = "CamelAggregatedSize";
     String AGGREGATED_TIMEOUT               = "CamelAggregatedTimeout";
@@ -171,6 +172,7 @@ public interface Exchange {
 
     String MAXIMUM_CACHE_POOL_SIZE     = "CamelMaximumCachePoolSize";
     String MAXIMUM_ENDPOINT_CACHE_SIZE = "CamelMaximumEndpointCacheSize";
+    String MAXIMUM_SIMPLE_CACHE_SIZE = "CamelMaximumSimpleCacheSize";
     String MAXIMUM_TRANSFORMER_CACHE_SIZE = "CamelMaximumTransformerCacheSize";
     String MAXIMUM_VALIDATOR_CACHE_SIZE = "CamelMaximumValidatorCacheSize";
     String MESSAGE_HISTORY             = "CamelMessageHistory";

@@ -47,19 +47,29 @@ import org.apache.camel.language.simple.types.SimpleParserException;
 import org.apache.camel.language.simple.types.SimpleToken;
 import org.apache.camel.language.simple.types.TokenType;
 import org.apache.camel.util.ExpressionToPredicateAdapter;
+import org.apache.camel.util.LRUCache;
 
 /**
  * A parser to parse simple language as a Camel {@link Predicate}
  */
 public class SimplePredicateParser extends BaseSimpleParser {
 
+    // use caches to avoid re-parsing the same expressions over and over again
+    private LRUCache<String, Expression> cacheExpression;
+
     @Deprecated
     public SimplePredicateParser(String expression) {
         super(expression, true);
     }
 
+    @Deprecated
     public SimplePredicateParser(String expression, boolean allowEscape) {
         super(expression, allowEscape);
+    }
+
+    public SimplePredicateParser(String expression, boolean allowEscape, LRUCache<String, Expression> cacheExpression) {
+        super(expression, allowEscape);
+        this.cacheExpression = cacheExpression;
     }
 
     public Predicate parsePredicate() {
@@ -223,7 +233,7 @@ public class SimplePredicateParser extends BaseSimpleParser {
                                   AtomicBoolean startFunction) {
         if (token.getType().isFunctionStart()) {
             startFunction.set(true);
-            return new SimpleFunctionStart(token);
+            return new SimpleFunctionStart(token, cacheExpression);
         } else if (token.getType().isFunctionEnd()) {
             startFunction.set(false);
             return new SimpleFunctionEnd(token);
@@ -577,6 +587,7 @@ public class SimplePredicateParser extends BaseSimpleParser {
             boolean numericSupported = false;
             boolean booleanSupported = false;
             boolean nullSupported = false;
+            boolean minusSupported = false;
             if (types == null || types.length == 0) {
                 literalWithFunctionsSupported = true;
                 // favor literal with functions over literals without functions
@@ -585,6 +596,7 @@ public class SimplePredicateParser extends BaseSimpleParser {
                 numericSupported = true;
                 booleanSupported = true;
                 nullSupported = true;
+                minusSupported = true;
             } else {
                 for (BinaryOperatorType.ParameterType parameterType : types) {
                     literalSupported |= parameterType.isLiteralSupported();
@@ -593,6 +605,7 @@ public class SimplePredicateParser extends BaseSimpleParser {
                     nullSupported |= parameterType.isNumericValueSupported();
                     booleanSupported |= parameterType.isBooleanValueSupported();
                     nullSupported |= parameterType.isNullValueSupported();
+                    minusSupported |= parameterType.isMinusValueSupported();
                 }
             }
 
@@ -605,7 +618,8 @@ public class SimplePredicateParser extends BaseSimpleParser {
                     || (functionSupported && functionText())
                     || (numericSupported && numericValue())
                     || (booleanSupported && booleanValue())
-                    || (nullSupported && nullValue())) {
+                    || (nullSupported && nullValue())
+                    || (minusSupported && minusValue())) {
                 // then after the right hand side value, there should be a whitespace if there is more tokens
                 nextToken();
                 if (!token.getType().isEol()) {
@@ -661,6 +675,12 @@ public class SimplePredicateParser extends BaseSimpleParser {
 
     protected boolean nullValue() {
         return accept(TokenType.nullValue);
+        // no other tokens to check so do not use nextToken
+    }
+    
+    protected boolean minusValue() {
+        nextToken();
+        return accept(TokenType.numericValue);
         // no other tokens to check so do not use nextToken
     }
 

@@ -27,10 +27,12 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.util.IOHelper;
 import org.apache.camel.util.StopWatch;
 import org.apache.camel.util.TimeUtils;
+import org.junit.Ignore;
 
 /**
  * @version 
  */
+@Ignore("Manual test")
 public class SplitterParallelBigFileTest extends ContextTestSupport {
 
     private int lines = 20000;
@@ -53,12 +55,7 @@ public class SplitterParallelBigFileTest extends ContextTestSupport {
         IOHelper.close(fos);
     }
 
-    public void testNoop() {
-        // noop
-    }
-
-    // disabled due manual test
-    public void xxxtestSplitParallelBigFile() throws Exception {
+    public void testSplitParallelBigFile() throws Exception {
         StopWatch watch = new StopWatch();
 
         NotifyBuilder builder = new NotifyBuilder(context).whenDone(lines + 1).create();
@@ -71,7 +68,7 @@ public class SplitterParallelBigFileTest extends ContextTestSupport {
         }
 
         // need a little sleep for capturing memory profiling
-        // Thread.sleep(60 * 1000);
+        Thread.sleep(60 * 1000);
     }
 
     @Override
@@ -82,7 +79,7 @@ public class SplitterParallelBigFileTest extends ContextTestSupport {
                 // lower max pool to 10 for less number of concurrent threads
                 //context.getExecutorServiceStrategy().getDefaultThreadPoolProfile().setMaxPoolSize(10);
 
-                from("file:target/split")
+                from("file:target/split?initialDelay=0&delay=10")
                     .split(body().tokenize(LS)).streaming().parallelProcessing()
                         .to("log:split?groupSize=1000")
                     .end()

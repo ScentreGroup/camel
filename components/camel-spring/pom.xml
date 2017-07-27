@@ -32,7 +32,6 @@
   <packaging>jar</packaging>
 
   <properties>
-    <!-- use spring-all-version-range to support camel-spring-dm also -->
     <camel.osgi.import>
       !org.springframework.boot.*,
       !org.springframework.context.annotation.*;resolution:=optional,
@@ -112,6 +111,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-context-support</artifactId>
       <scope>test</scope>
@@ -164,8 +168,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>xmlunit</groupId>
-      <artifactId>xmlunit</artifactId>
+      <groupId>org.xmlunit</groupId>
+      <artifactId>xmlunit-core</artifactId>
       <version>${xmlunit-version}</version>
       <scope>test</scope>
     </dependency>

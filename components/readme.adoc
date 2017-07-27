@@ -2,7 +2,7 @@ Components
 ^^^^^^^^^^
 
 // components: START
-Number of Components: 275 in 189 JAR artifacts (17 deprecated)
+Number of Components: 276 in 190 JAR artifacts (17 deprecated)
 
 [width="100%",cols="4,1,5",options="header"]
 |=======================================================================
@@ -165,13 +165,16 @@ Number of Components: 275 in 189 JAR artifacts (17 deprecated)
 `controlbus:command:language` | 2.11 | The controlbus component provides easy management of Camel applications based on the Control Bus EIP pattern.
 
 | link:camel-couchbase/src/main/docs/couchbase-component.adoc[Couchbase] (camel-couchbase) +
-`couchbase:url` | 2.19 | Represents a Couchbase endpoint that can query Views with a Poll strategy and/or produce various type of operations.
+`couchbase:protocol:hostname:port` | 2.19 | Represents a Couchbase endpoint that can query Views with a Poll strategy and/or produce various type of operations.
 
 | link:camel-couchdb/src/main/docs/couchdb-component.adoc[CouchDB] (camel-couchdb) +
 `couchdb:protocol:hostname:port/database` | 2.11 | The couchdb component is used for integrate with CouchDB databases.
 
 | link:camel-crypto/src/main/docs/crypto-component.adoc[Crypto (JCE)] (camel-crypto) +
 `crypto:cryptoOperation:name` | 2.3 | The crypto component is used for signing and verifying exchanges using the Signature Service of the Java Cryptographic Extension (JCE).
+
+| link:camel-crypto-cms/src/main/docs/crypto-cms-component.adoc[Crypto CMS] (camel-crypto-cms) +
+`crypto-cms:cryptoOperation:name` | 2.20 | Camel Cryptographic Message Syntax Support
 
 | link:camel-cxf/src/main/docs/cxf-component.adoc[CXF] (camel-cxf) +
 `cxf:beanId:address` | 1.0 | The cxf component is used for SOAP WebServices using Apache CXF.
@@ -348,25 +351,25 @@ Number of Components: 275 in 189 JAR artifacts (17 deprecated)
 `ibatis:statement` | 1.2 | *deprecated* Performs a query poll insert update or delete in a relational database using Apache iBATIS.
 
 | link:camel-ignite/src/main/docs/ignite-cache-component.adoc[Ignite Cache] (camel-ignite) +
-`ignite-cache:[cacheName]` | 2.17 | The Ignite Cache endpoint is one of camel-ignite endpoints which allows you to interact with an Ignite Cache.
+`ignite-cache:cacheName` | 2.17 | The Ignite Cache endpoint is one of camel-ignite endpoints which allows you to interact with an Ignite Cache.
 
 | link:camel-ignite/src/main/docs/ignite-compute-component.adoc[Ignite Compute] (camel-ignite) +
-`ignite-compute:[endpointId]` | 2.17 | The Ignite Compute endpoint is one of camel-ignite endpoints which allows you to run compute operations on the cluster by passing in an IgniteCallable an IgniteRunnable an IgniteClosure or collections of them along with their parameters if necessary.
+`ignite-compute:endpointId` | 2.17 | The Ignite Compute endpoint is one of camel-ignite endpoints which allows you to run compute operations on the cluster by passing in an IgniteCallable an IgniteRunnable an IgniteClosure or collections of them along with their parameters if necessary.
 
 | link:camel-ignite/src/main/docs/ignite-events-component.adoc[Ignite Events] (camel-ignite) +
-`ignite-events:[endpointId]` | 2.17 | The Ignite Events endpoint is one of camel-ignite endpoints which allows you to receive events from the Ignite cluster by creating a local event listener.
+`ignite-events:endpointId` | 2.17 | The Ignite Events endpoint is one of camel-ignite endpoints which allows you to receive events from the Ignite cluster by creating a local event listener.
 
 | link:camel-ignite/src/main/docs/ignite-idgen-component.adoc[Ignite ID Generator] (camel-ignite) +
-`ignite-idgen:[name]` | 2.17 | The Ignite ID Generator endpoint is one of camel-ignite endpoints which allows you to interact with Ignite Atomic Sequences and ID Generators.
+`ignite-idgen:name` | 2.17 | The Ignite ID Generator endpoint is one of camel-ignite endpoints which allows you to interact with Ignite Atomic Sequences and ID Generators.
 
 | link:camel-ignite/src/main/docs/ignite-messaging-component.adoc[Ignite Messaging] (camel-ignite) +
-`ignite-messaging:[topic]` | 2.17 | The Ignite Messaging endpoint is one of camel-ignite endpoints which allows you to send and consume messages from an Ignite topic.
+`ignite-messaging:topic` | 2.17 | The Ignite Messaging endpoint is one of camel-ignite endpoints which allows you to send and consume messages from an Ignite topic.
 
 | link:camel-ignite/src/main/docs/ignite-queue-component.adoc[Ignite Queues] (camel-ignite) +
-`ignite-queue:[name]` | 2.17 | The Ignite Queue endpoint is one of camel-ignite endpoints which allows you to interact with Ignite Queue data structures.
+`ignite-queue:name` | 2.17 | The Ignite Queue endpoint is one of camel-ignite endpoints which allows you to interact with Ignite Queue data structures.
 
 | link:camel-ignite/src/main/docs/ignite-set-component.adoc[Ignite Sets] (camel-ignite) +
-`ignite-set:[name]` | 2.17 | The Ignite Sets endpoint is one of camel-ignite endpoints which allows you to interact with Ignite Set data structures.
+`ignite-set:name` | 2.17 | The Ignite Sets endpoint is one of camel-ignite endpoints which allows you to interact with Ignite Set data structures.
 
 | link:camel-infinispan/src/main/docs/infinispan-component.adoc[Infinispan] (camel-infinispan) +
 `infinispan:cacheName` | 2.13 | For reading/writing from/to Infinispan distributed key/value store and data grid.
@@ -1009,7 +1012,7 @@ Miscellaneous Components
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 // others: START
-Number of Miscellaneous Components: 38 in 38 JAR artifacts (14 deprecated)
+Number of Miscellaneous Components: 37 in 37 JAR artifacts (13 deprecated)
 
 [width="100%",cols="4,1,5",options="header"]
 |=======================================================================
@@ -1064,8 +1067,6 @@ Number of Miscellaneous Components: 38 in 38 JAR artifacts (14 deprecated)
 | link:camel-spring-cloud/src/main/docs/spring-cloud.adoc[Spring Cloud] (camel-spring-cloud) | 2.19 | Camel Cloud integration with Spring Cloud
 
 | link:camel-spring-cloud-netflix/src/main/docs/spring-cloud-netflix.adoc[Spring Cloud Netflix] (camel-spring-cloud-netflix) | 2.19 | Camel Cloud integration with Spring Cloud Netflix
-
-| link:camel-spring-dm/src/main/docs/spring-dm.adoc[Spring DM] (camel-spring-dm) | 2.18 | *deprecated* Camel SpringDM (OSGi) XML DSL
 
 | link:camel-spring-javaconfig/src/main/docs/spring-javaconfig.adoc[Spring Java Configuration] (camel-spring-javaconfig) | 2.0 | Using Camel with Spring Java Configuration
 

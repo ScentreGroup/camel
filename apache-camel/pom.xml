@@ -160,6 +160,10 @@
     </dependency>
     <dependency>
       <groupId>org.apache.camel</groupId>
+      <artifactId>camel-caffeine</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.camel</groupId>
       <artifactId>camel-cassandraql</artifactId>
     </dependency>
     <dependency>
@@ -217,6 +221,10 @@
     <dependency>
       <groupId>org.apache.camel</groupId>
       <artifactId>camel-crypto</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-crypto-cms</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.camel</groupId>
@@ -943,10 +951,6 @@
     </dependency>
     <dependency>
       <groupId>org.apache.camel</groupId>
-      <artifactId>camel-spring-dm</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.camel</groupId>
       <artifactId>camel-spring-integration</artifactId>
     </dependency>
     <dependency>
@@ -1247,6 +1251,11 @@
     </dependency>
     <dependency>
       <groupId>org.apache.camel</groupId>
+      <artifactId>camel-caffeine-starter</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.camel</groupId>
       <artifactId>camel-cassandraql-starter</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -1313,6 +1322,11 @@
     <dependency>
       <groupId>org.apache.camel</groupId>
       <artifactId>camel-crypto-starter</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-crypto-cms-starter</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
