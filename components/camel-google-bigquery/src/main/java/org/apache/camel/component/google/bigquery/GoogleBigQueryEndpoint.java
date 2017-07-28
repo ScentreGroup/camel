@@ -92,58 +92,6 @@ public class GoogleBigQueryEndpoint extends DefaultEndpoint {
         throw new UnsupportedOperationException("Cannot consume from the BigQuery endpoint: " + getEndpointUri());
     }
 
-    void checkOrCreateBQTable(String tableId) {
-        if (configuration.isCreateTable()) {
-            verifiedTables.computeIfAbsent(tableId, (tableName) -> {
-                try {
-                    if (!checkBqTableExists(tableId)) {
-                        createBqTable(tableId);
-                    }
-                    return true;
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        }
-    }
-
-    private void createBqTable(String actualTableName) throws Exception {
-        TableReference reference = new TableReference()
-            .setTableId(actualTableName)
-            .setDatasetId(configuration.getDatasetId())
-            .setProjectId(configuration.getProjectId());
-        InputStream schemaInputStream = ResourceHelper.resolveMandatoryResourceAsInputStream(getCamelContext(), configuration.getSchemaLocation());
-        TableSchema schema = GoogleBigQuerySchemaReader.readDefinition(schemaInputStream);
-        Table table = new Table()
-            .setTableReference(reference)
-            .setSchema(schema);
-        if (configuration.isPartitioned()) {
-            TimePartitioning timePartitioning = new TimePartitioning();
-            // Only type supported currently
-            timePartitioning.setType("DAY");
-            table = table.setTimePartitioning(timePartitioning);
-        }
-        bigquery.tables()
-            .insert(configuration.getProjectId(), configuration.getDatasetId(), table)
-            .execute();
-    }
-
-    // Google API is paginated.
-    // Implementing two approaches at the same time to address that.
-    // 1. Setting Max Results per page to 5000
-    // 2. Iterating through pages, in case there is still an implied limit on Max Results
-    //    suspicion is that it might be set to 500.
-    private boolean checkBqTableExists(String tableName) throws Exception {
-        QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setQuery("SELECT COUNT(1) AS cnt\n"
-                + "FROM " + configuration.getDatasetId() + ".__TABLES_SUMMARY__\n"
-                + "WHERE table_id = '" + tableName + "'");
-
-        Bigquery.Jobs.Query query = bigquery.jobs().query(configuration.getProjectId(), queryRequest);
-        QueryResponse response = query.execute();
-        return "1".equals(response.getRows().get(0).getF().get(0).getV());
-    }
-
     public boolean isSingleton() {
         return false;
     }

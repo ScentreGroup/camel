@@ -121,7 +121,7 @@ public class InsertIdTest extends BigQueryTestSupport {
         object.put("col1", uuidCol1);
         object.put("col2", uuidCol2);
         exchange.getIn().setBody(object);
-        exchange.getIn().setHeader(GoogleBigQueryConstants.INSERT_ID_HEADER_NAME, uuidCol1);
+        exchange.getIn().setHeader(GoogleBigQueryConstants.INSERT_ID, uuidCol1);
 
         Exchange exchange2 = new DefaultExchange(context);
         String uuid2Col2 = UUID.randomUUID().toString();
@@ -130,7 +130,7 @@ public class InsertIdTest extends BigQueryTestSupport {
         object.put("col1", uuidCol1);
         object.put("col2", uuid2Col2);
         exchange2.getIn().setBody(object);
-        exchange.getIn().setHeader(GoogleBigQueryConstants.INSERT_ID_HEADER_NAME, uuidCol1);
+        exchange.getIn().setHeader(GoogleBigQueryConstants.INSERT_ID, uuidCol1);
 
         sendResult.expectedMessageCount(2);
         producer.send(exchange);
