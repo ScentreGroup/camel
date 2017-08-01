@@ -49,7 +49,7 @@
     <antlr-runtime-bundle-version>3.5.2_1</antlr-runtime-bundle-version>
     <aopalliance-bundle-version>1.0_6</aopalliance-bundle-version>
     <apacheds-version>2.0.0-M24</apacheds-version>
-    <apache-drill-version>1.10.0</apache-drill-version>
+    <apache-drill-version>1.11.0</apache-drill-version>
     <apache-gora-version>0.7</apache-gora-version>
     <apache-mime4j-version>0.7.2</apache-mime4j-version>
     <aries-blueprint-api-version>1.0.1</aries-blueprint-api-version>
@@ -103,7 +103,7 @@
     <c3p0-version>0.9.5.2</c3p0-version>
     <c3p0-bundle-version>0.9.5.2_1</c3p0-bundle-version>
     <caffeine-version>2.5.3</caffeine-version>
-    <californium-version>1.0.5</californium-version>
+    <californium-version>1.0.6</californium-version>
     <camel-test-spring-artifactId>camel-test-spring</camel-test-spring-artifactId>
     <cassandra-driver-version>3.3.0</cassandra-driver-version>
     <cassandra-driver-guava-version>18.0</cassandra-driver-guava-version>
@@ -161,7 +161,7 @@
     <commons-pool-version>1.6</commons-pool-version>
     <commons-pool2-version>2.4.2</commons-pool2-version>
     <commons-vfs2-version>2.0</commons-vfs2-version>
-    <compress-lzf-version>1.0.3</compress-lzf-version>
+    <compress-lzf-version>1.0.4</compress-lzf-version>
     <consul-client-version>0.15.2</consul-client-version>
     <consul-client-bundle-version>0.15.2_1</consul-client-bundle-version>
     <cobertura-maven-plugin-version>2.7</cobertura-maven-plugin-version>
@@ -197,7 +197,7 @@
     <elasticsearch-bundle-version>2.4.4_1</elasticsearch-bundle-version>
     <elasticsearch-guava-version>18.0</elasticsearch-guava-version>
     <elasticsearch-version>2.4.4</elasticsearch-version>
-    <elasticsearch5-version>5.4.3</elasticsearch5-version>
+    <elasticsearch5-version>5.5.0</elasticsearch5-version>
     <elasticsearch5-bundle-version>5.4.3_1</elasticsearch5-bundle-version>
     <elasticsearch-cluster-runner-version>2.4.0.0</elasticsearch-cluster-runner-version>
     <elasticsearch5-cluster-runner-version>5.4.2.0</elasticsearch5-cluster-runner-version>
@@ -314,7 +314,7 @@
     <jackson-version>1.9.12</jackson-version>
     <jackson-spark-version>2.4.5</jackson-spark-version>
     <jackson2-scala-version>2.6.1</jackson2-scala-version>
-    <jackson2-version>2.8.9</jackson2-version>
+    <jackson2-version>2.9.0</jackson2-version>
     <jackrabbit-version>2.15.4</jackrabbit-version>
     <jackrabbit-guava-version>15.0</jackrabbit-guava-version>
     <jain-sip-ri-bundle-version>1.2.154_2</jain-sip-ri-bundle-version>
@@ -401,7 +401,9 @@
     <json-accessors-smart-version>1.2</json-accessors-smart-version>
     <json-path-version>2.4.0</json-path-version>
     <json-simple-version>1.1.1</json-simple-version>
-    <json-smart-version>2.3</json-smart-version>
+    <!-- spring-boot uses json-smart 2.2.x -->
+    <json-smart-version>2.2.1</json-smart-version>
+    <json-smart-karaf-version>2.3</json-smart-karaf-version>
     <jsoup-version>1.9.2</jsoup-version>
     <jsp-api-2.1-version>1.0.1</jsp-api-2.1-version>
     <jsr311-api-version>1.1.1</jsr311-api-version>
@@ -474,7 +476,8 @@
     <maven-surefire-report-plugin-version>2.13</maven-surefire-report-plugin-version>
     <maven-war-plugin-version>3.0.0</maven-war-plugin-version>
     <mchange-commons-java-version>0.2.11</mchange-commons-java-version>
-    <metrics-version>3.2.3</metrics-version>
+    <!-- TODO: spring-boot uses metrics 3.1.x -->
+    <metrics-version>3.1.5</metrics-version>
     <milo-version>0.1.3</milo-version>
     <mina-bundle-version>1.1.7_6</mina-bundle-version>
     <mina-version>1.1.7</mina-version>
@@ -607,12 +610,13 @@
     <splunk-version>1.6.3.0_1</splunk-version>
     <spring-batch-version>3.0.8.RELEASE</spring-batch-version>
     <spring-batch-bundle-version>3.0.7.RELEASE_1</spring-batch-bundle-version>
-    <spring-boot-version>1.5.5.RELEASE</spring-boot-version>
+    <spring-boot-version>1.5.6.RELEASE</spring-boot-version>
+    <!-- use same version of spring-cloud 1.2.x -->
     <spring-cloud-commons-version>1.2.3.RELEASE</spring-cloud-commons-version>
-    <spring-cloud-netflix-version>1.3.2.RELEASE</spring-cloud-netflix-version>
+    <spring-cloud-netflix-version>1.2.7.RELEASE</spring-cloud-netflix-version>
     <spring-castor-bundle-version>1.2.0</spring-castor-bundle-version>
     <spring-data-commons-version>1.11.6.RELEASE</spring-data-commons-version>
-    <spring-data-redis-version>1.8.5.RELEASE</spring-data-redis-version>
+    <spring-data-redis-version>1.8.6.RELEASE</spring-data-redis-version>
     <spring-integration-version>4.3.11.RELEASE</spring-integration-version>
     <spring-javaconfig-version>1.0.0-20090215</spring-javaconfig-version>
     <spring-ldap-version>2.3.1.RELEASE</spring-ldap-version>
@@ -682,7 +686,7 @@
     <weld2-version>2.4.4.Final</weld2-version>
     <weld3-version>3.0.0.Final</weld3-version>
     <werken-xpath-bundle-version>0.9.4_5</werken-xpath-bundle-version>
-    <wiremock-version>2.6.0</wiremock-version>
+    <wiremock-version>2.7.0</wiremock-version>
     <woodstox-version>4.4.1</woodstox-version>
     <ws-commons-util-bundle-version>1.0.2_2</ws-commons-util-bundle-version>
     <wsdl4j-bundle-version>1.6.3_1</wsdl4j-bundle-version>
@@ -3348,6 +3352,21 @@
       <dependency>
         <groupId>org.apache.camel</groupId>
         <artifactId>camel-telegram-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.camel</groupId>
+        <artifactId>camel-thrift-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.camel</groupId>
+        <artifactId>camel-tika-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.camel</groupId>
+        <artifactId>camel-twilio-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
