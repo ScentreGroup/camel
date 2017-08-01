@@ -29,6 +29,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.google.bigquery.BigQueryTestSupport;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
+import org.junit.Before;
 import org.junit.Test;
 
 public class SingleRowTest extends BigQueryTestSupport {
@@ -37,7 +38,7 @@ public class SingleRowTest extends BigQueryTestSupport {
     @EndpointInject(uri = "direct:in")
     private Endpoint directIn;
 
-    @EndpointInject(uri = "google-bigquery:{{project.id}}:{{bigquery.datasetId}}:" + TABLE_ID + "?createTable=true&schemaLocation=classpath:/schema/singlerow.json")
+    @EndpointInject(uri = "google-bigquery:{{project.id}}:{{bigquery.datasetId}}:" + TABLE_ID)
     private Endpoint bigqueryEndpoint;
 
     @EndpointInject(uri = "mock:sendResult")
@@ -45,6 +46,11 @@ public class SingleRowTest extends BigQueryTestSupport {
 
     @Produce(uri = "direct:in")
     private ProducerTemplate producer;
+
+    @Before
+    public void init() throws Exception {
+        createBqTable(TABLE_ID);
+    }
 
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception {

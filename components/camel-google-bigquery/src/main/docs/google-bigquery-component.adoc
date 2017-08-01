@@ -27,7 +27,8 @@ for this component:
 ------------------------------------------------------
 
 [[GoogleBigQuery-AuthenticationConfiguration]]
-Authentication Configuration
+
+### Authentication Configuration
 
 Google BigQuery component authentication is targeted for use with the GCP Service Accounts.
 For more information please refer to https://cloud.google.com/docs/authentication[Google Cloud Platform Auth Guide]
@@ -64,13 +65,13 @@ The Google BigQuery component supports 2 options which are listed below.
 [width="100%",cols="2,5,^1,2",options="header"]
 |=======================================================================
 | Name | Description | Default | Type
-| **connectionFactory** (common) | Sets the connection factory to use: provides the ability to explicitly manage connection credentials: - the path to the key file - the Service Account Key / Email pair |  | GooglePubsubConnection Factory
+| **connectionFactory** (common) | Sets the connection factory to use: provides the ability to explicitly manage connection credentials: - the path to the key file - the Service Account Key / Email pair |  | GoogleBigQueryConnection Factory
 | **resolveProperty Placeholders** (advanced) | Whether the component should resolve property placeholders on itself when starting. Only properties which are of String type can use property placeholders. | true | boolean
 |=======================================================================
 // component options: END
 
 // endpoint options: START
-The Google Pubsub endpoint is configured using URI syntax:
+The Google BigQuery endpoint is configured using URI syntax:
 
     google-bigquery:projectId:datasetId[:tableId]
 
@@ -91,8 +92,8 @@ with the following path and query parameters:
 [width="100%",cols="2,5,^1,2",options="header"]
 |=======================================================================
 | Name | Description | Default | Type
-| **concurrentConsumers** (producer) | The maximum number of simultaneous requests when running in async mode |  | Integer
-| **connectionFactory** (common) | ConnectionFactory to obtain connection to PubSub Service. If non provided the default will be used. |  | GooglePubsubConnection Factory
+| **concurrentProducers** (producer) | The maximum number of simultaneous requests when running in async mode |  | Integer
+| **connectionFactory** (common) | ConnectionFactory to obtain connection to BigQuery Service. If non provided the default will be used. |  | GoogleBigQueryConnection Factory
 | **loggerId** (common) | Logger ID to use when a match to the parent route required |  | String
 | **useAsInsertId** (producer) | Field in message to use as insert id. |  | String
 | **bridgeErrorHandler** (consumer) | Allows for bridging the consumer to the Camel routing Error Handler which mean any exceptions occurred while the consumer is trying to pickup incoming messages or the likes will now be processed as a message and handled by the routing Error Handler. By default the consumer will use the org.apache.camel.spi.ExceptionHandler to deal with exceptions that will be logged at WARN or ERROR level and ignored. | false | boolean

@@ -17,12 +17,20 @@
 package org.apache.camel.component.google.bigquery;
 
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.services.bigquery.model.QueryRequest;
 import com.google.api.services.bigquery.model.QueryResponse;
+import com.google.api.services.bigquery.model.Table;
+import com.google.api.services.bigquery.model.TableFieldSchema;
+import com.google.api.services.bigquery.model.TableReference;
+import com.google.api.services.bigquery.model.TableSchema;
 import org.apache.camel.CamelContext;
 import org.apache.camel.component.properties.PropertiesComponent;
 import org.apache.camel.impl.JndiRegistry;
@@ -34,6 +42,7 @@ public class BigQueryTestSupport extends CamelTestSupport {
     public static final String PROJECT_ID;
     public static final String DATASET_ID;
     public static final String SERVICE_URL;
+    public static final String CREDENTIALS_FILE_LOCATION;
 
     private GoogleBigQueryConnectionFactory connectionFactory;
 
@@ -44,6 +53,7 @@ public class BigQueryTestSupport extends CamelTestSupport {
         PROJECT_ID = testProperties.getProperty("project.id");
         DATASET_ID = testProperties.getProperty("bigquery.datasetId");
         SERVICE_URL = testProperties.getProperty("test.serviceURL");
+        CREDENTIALS_FILE_LOCATION = testProperties.getProperty("service.credentialsFileLocation");
     }
 
     private static Properties loadProperties() {
@@ -106,5 +116,39 @@ public class BigQueryTestSupport extends CamelTestSupport {
                 .query(PROJECT_ID, queryRequest)
                 .execute();
         assertEquals(1, queryResponse.getRows().size());
+    }
+
+    protected void createBqTable(String tableId) throws Exception {
+        TableReference reference = new TableReference()
+                .setTableId(tableId)
+                .setDatasetId(DATASET_ID)
+                .setProjectId(PROJECT_ID);
+        InputStream in = this.getClass().getResourceAsStream("/schema/simple-table.json");
+        TableSchema schema = readDefinition(in);
+        Table table = new Table()
+                .setTableReference(reference)
+                .setSchema(schema);
+        try {
+            getConnectionFactory().getDefaultClient().tables()
+                    .insert(PROJECT_ID, DATASET_ID, table)
+                    .execute();
+        } catch (GoogleJsonResponseException e) {
+            if (e.getDetails().getCode() == 409) {
+                log.info("Table {} already exist");
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    private TableSchema readDefinition(InputStream schemaInputStream) throws Exception {
+        TableSchema schema = new TableSchema();
+
+        ObjectMapper mapper = new ObjectMapper();
+        List<TableFieldSchema> fields = mapper.readValue(schemaInputStream, ArrayList.class);
+
+        schema.setFields(fields);
+
+        return schema;
     }
 }

@@ -1,36 +1,27 @@
-mvn## Camel Google BigQuery Component testing
+## Camel Google BigQuery Component testing
 
 The unit tests provided are somewhat limited.
-Due to the nature of the component, it needs to be tested against a server. To assist with this task Google has provided
-a PubSub Emulator. The test for the component, therefore, have been split into two groups :
+
+Due to the nature of the component, it needs to be tested against a google BigQuery instance as no
+emulator is available.
 
 * Unit : <br>
   Standalone tests that can be conducted on their own
 * Integration : <br>
-  Tests against the emulator
+  Tests against a Google BigQuery instance
 
-### Emulator local installation
+### Execution of integration tests
 
-Emulator is being distributed with the [Google SDK](https://cloud.google.com/sdk/).
-Once the SDK has been installed and configured, add PubSub Emulator:
+A Google Cloud account with a configured BigQuery instance is required with a dataset created.
 
-```
-gcloud components install pubsub-emulator
-```
+For the tests the `project.id` and `bigquery.datasetId` needs to be configured. By default
+the current google user will be used to connect but credentials can be provided either by
+account/key (via `service.account` and `service.key`) or a credentials file (`service.credentialsFileLocation`)
 
-Please note the folder where it is installed and configure _GCLOUD_SDK_PATH_ environmental variable.
-It is a custom variable, used by mvn plugin to find the installation.
-
-
-### Execution
-
-Maven is configured to start the emulator prior the integration tests and shut down afterwards.
-The emulator is configured to listen to port 8383.
-
-Integration tests and the emulator will eb available as part of _google-pubsub-test_ profile:
+Running tests against BigQuery instance:
 
 ```
-mvn -Pgoogle-pubsub-test verify
+mvn -Pgoogle-bigquery-test verify
 ```
 
 

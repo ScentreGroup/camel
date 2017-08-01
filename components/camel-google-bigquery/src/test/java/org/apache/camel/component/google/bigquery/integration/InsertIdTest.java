@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import org.apache.camel.Endpoint;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
@@ -30,6 +31,8 @@ import org.apache.camel.component.google.bigquery.BigQueryTestSupport;
 import org.apache.camel.component.google.bigquery.GoogleBigQueryConstants;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class InsertIdTest extends BigQueryTestSupport {
@@ -42,13 +45,11 @@ public class InsertIdTest extends BigQueryTestSupport {
     private Endpoint directIn;
 
     @EndpointInject(uri = "google-bigquery:{{project.id}}:{{bigquery.datasetId}}:"
-            + TABLE_ID
-            + "?createTable=true&schemaLocation=classpath:/schema/singlerow.json&useAsInsertId=col1")
+            + TABLE_ID + "?useAsInsertId=col1")
     private Endpoint bigqueryEndpointWithInsertId;
 
     @EndpointInject(uri = "google-bigquery:{{project.id}}:{{bigquery.datasetId}}:"
-            + TABLE_ID
-            + "?createTable=true&schemaLocation=classpath:/schema/singlerow.json")
+            + TABLE_ID)
     private Endpoint bigqueryEndpoint;
 
     @EndpointInject(uri = "mock:sendResult")
@@ -63,6 +64,11 @@ public class InsertIdTest extends BigQueryTestSupport {
     @Produce(uri = "direct:in")
     private ProducerTemplate producer;
 
+    @Before
+    public void init() throws Exception {
+        createBqTable(TABLE_ID);
+    }
+
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
         return new RouteBuilder() {
@@ -74,14 +80,15 @@ public class InsertIdTest extends BigQueryTestSupport {
 
                 from(directIn)
                         .routeId("SingleRow")
-                        .to(bigqueryEndpointWithInsertId)
+                        .to(bigqueryEndpoint)
                         .to(sendResult);
             }
         };
     }
 
+
     @Test
-    public void sendTwoMessagesExpectOneRow() throws Exception {
+    public void sendTwoMessagesExpectOneRowUsingConfig() throws Exception {
 
         Exchange exchange = new DefaultExchange(context);
         String uuidCol1 = UUID.randomUUID().toString();
@@ -130,7 +137,7 @@ public class InsertIdTest extends BigQueryTestSupport {
         object.put("col1", uuidCol1);
         object.put("col2", uuid2Col2);
         exchange2.getIn().setBody(object);
-        exchange.getIn().setHeader(GoogleBigQueryConstants.INSERT_ID, uuidCol1);
+        exchange2.getIn().setHeader(GoogleBigQueryConstants.INSERT_ID, uuidCol1);
 
         sendResult.expectedMessageCount(2);
         producer.send(exchange);

@@ -16,27 +16,17 @@
  */
 package org.apache.camel.component.google.bigquery;
 
-import java.io.InputStream;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
 import com.google.api.services.bigquery.Bigquery;
-import com.google.api.services.bigquery.model.QueryRequest;
-import com.google.api.services.bigquery.model.QueryResponse;
-import com.google.api.services.bigquery.model.Table;
-import com.google.api.services.bigquery.model.TableReference;
-import com.google.api.services.bigquery.model.TableSchema;
-import com.google.api.services.bigquery.model.TimePartitioning;
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
-import org.apache.camel.util.ResourceHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * BigQuery Endpoint Definition
@@ -52,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * Another consideration is that exceptions are not handled within the class. They are expected to bubble up and be handled
  * by Camel.
  */
-@UriEndpoint(scheme = "bigquery", title = "BigQuery", syntax = "bigquery:projectId:dataSetId[:tableName]")
+@UriEndpoint(scheme = "bigquery", title = "BigQuery", syntax = "bigquery:projectId:datasetId[:tableName]", label = "messaging")
 public class GoogleBigQueryEndpoint extends DefaultEndpoint {
     @UriParam
     protected final GoogleBigQueryConfiguration configuration;
@@ -71,13 +61,13 @@ public class GoogleBigQueryEndpoint extends DefaultEndpoint {
 
     public Producer createProducer() throws Exception {
         GoogleBigQueryProducer producer = new GoogleBigQueryProducer(this, configuration);
-        if (configuration.getConcurrentConsumers() > 0) {
+        if (configuration.getConcurrentProducers() > 0) {
             executorService = getCamelContext()
                     .getExecutorServiceManager()
                     .newFixedThreadPool(
                             this,
                             "camel-google-bigquery",
-                            configuration.getConcurrentConsumers()
+                            configuration.getConcurrentProducers()
                     );
         } else {
             executorService = getCamelContext()

@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.google.api.client.util.Strings;
 import com.google.api.services.bigquery.Bigquery;
 import com.google.api.services.bigquery.model.TableDataInsertAllRequest;
 import com.google.api.services.bigquery.model.TableDataInsertAllResponse;
@@ -79,7 +80,7 @@ public class GoogleBigQueryProducer extends DefaultAsyncProducer {
      * The incoming can be
      * <ul>
      *     <li>A map where all map keys will map to field records. One map object maps to one bigquery row</li>
-     *     <li>A list of objects. Each entry in the list will map to one bigquery row</li>
+     *     <li>A list of maps. Each entry in the list will map to one bigquery row</li>
      * </ul>
      * The incoming message is expected to be a List of Maps
      * The assumptions:
@@ -92,13 +93,13 @@ public class GoogleBigQueryProducer extends DefaultAsyncProducer {
 
         List<Exchange> processGroup = new ArrayList<>();
 
-        String partitionDecorator = null;
-        String suffix = null;
+        String partitionDecorator = "";
+        String suffix = "";
         int totalProcessed = 0;
 
         for (Exchange ex: exchanges) {
-            String tmpPartitionDecorator = exchange.getIn().getHeader(GoogleBigQueryConstants.PARTITION_DECORATOR, String.class);
-            String tmpSuffix = exchange.getIn().getHeader(GoogleBigQueryConstants.TABLE_SUFFIX, String.class);
+            String tmpPartitionDecorator = exchange.getIn().getHeader(GoogleBigQueryConstants.PARTITION_DECORATOR, "", String.class);
+            String tmpSuffix = exchange.getIn().getHeader(GoogleBigQueryConstants.TABLE_SUFFIX, "", String.class);
 
             // Ensure all rows of same request goes to same table and suffix
             if (!tmpPartitionDecorator.equals(partitionDecorator) || !tmpSuffix.equals(suffix)) {
@@ -121,9 +122,9 @@ public class GoogleBigQueryProducer extends DefaultAsyncProducer {
     }
 
     private int process(String partitionDecorator, String suffix, List<Exchange> exchanges, String exchangeId) throws Exception {
-        String tableId = partitionDecorator == null ?
-                configuration.getTableId() :
-                (configuration.getTableId() + "?" + partitionDecorator);
+        String tableId = Strings.isNullOrEmpty(partitionDecorator)
+                ? configuration.getTableId()
+                : (configuration.getTableId() + "?" + partitionDecorator);
 
         List<TableDataInsertAllRequest.Rows> apiRequestRows = new ArrayList<>();
         for (Exchange ex: exchanges) {
@@ -145,21 +146,7 @@ public class GoogleBigQueryProducer extends DefaultAsyncProducer {
 
         GoogleBigQueryEndpoint endpoint = getEndpoint();
 
-        endpoint.checkOrCreateBQTable(tableId);
         TableDataInsertAllRequest apiRequestData = new TableDataInsertAllRequest().setRows(apiRequestRows);
-
-        String insertId = null;
-        if (configuration.getUseAsInsertId() != null) {
-            Object id = apiRequestRows.get(0).get(configuration.getUseAsInsertId());
-            if (id instanceof String) {
-                insertId = (String) id;
-            }
-        } else {
-            insertId = exchanges.get(0).getIn().getHeader(GoogleBigQueryConstants.INSERT_ID, String.class);
-        }
-        if (insertId != null) {
-            apiRequestData.set("insertId", insertId);
-        }
 
         Bigquery.Tabledata.InsertAll apiRequest = endpoint.getBigquery()
                 .tabledata()

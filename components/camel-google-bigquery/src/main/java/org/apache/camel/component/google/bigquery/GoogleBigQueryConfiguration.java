@@ -17,25 +17,30 @@
 
 package org.apache.camel.component.google.bigquery;
 
+import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriParams;
+import org.apache.camel.spi.UriPath;
 
 @UriParams
 public class GoogleBigQueryConfiguration {
-    @UriParam(name = "concurrentConsumers", description = "Maximum number of simultaneous consumers when using async processing")
-    private int concurrentConsumers;
+    @UriParam(name = "concurrentProducers", description = "Maximum number of simultaneous consumers when using async processing")
+    private int concurrentProducers;
 
     @UriParam(name = "connectionFactory", description = "ConnectionFactory to obtain connection to Bigquery Service. If non provided the default one will be used")
     private GoogleBigQueryConnectionFactory connectionFactory;
 
-    @UriParam(name = "loggerId")
+    @UriParam(name = "loggerId", description = "Logger ID to use when a match to the parent route required")
     private String loggerId;
 
     @UriParam(name = "useAsInsertId", description = "Field name to use as insert id")
     private String useAsInsertId;
 
+    @UriPath(label = "common", description = "Google Cloud Project Id") @Metadata(required = "true")
     private String projectId;
+    @UriPath(label = "common", description = "BigQuery Dataset Id") @Metadata(required = "true")
     private String datasetId;
+    @UriPath(label = "common", description = "BigQuery table id") @Metadata(required = "true")
     private String tableId;
 
     public void parseRemaining(String remaining) {
@@ -62,7 +67,7 @@ public class GoogleBigQueryConfiguration {
         return this;
     }
     /**
-     * ConnectionFactory to obtain connection to PubSub Service. If non provided the default will be used.
+     * ConnectionFactory to obtain connection to Bigquery Service. If non provided the default will be used.
      */
     public GoogleBigQueryConnectionFactory getConnectionFactory() {
         return connectionFactory;
@@ -72,12 +77,12 @@ public class GoogleBigQueryConfiguration {
         this.connectionFactory = connectionFactory;
     }
 
-    public int getConcurrentConsumers() {
-        return concurrentConsumers;
+    public int getConcurrentProducers() {
+        return concurrentProducers;
     }
 
-    public GoogleBigQueryConfiguration setConcurrentConsumers(int concurrentConsumers) {
-        this.concurrentConsumers = concurrentConsumers;
+    public GoogleBigQueryConfiguration setConcurrentProducers(int concurrentProducers) {
+        this.concurrentProducers = concurrentProducers;
         return this;
     }
 
