@@ -111,6 +111,7 @@ with the following path and query parameters:
 |`CamelGoogleBigQuery.TableSuffix` |`String` |Table suffix to use when inserting data
 |`CamelGoogleBigQuery.InsertId` |`String` |InsertId to use when inserting data
 |`CamelGoogleBigQuery.PartitionDecorator` |`String` |Partition decorator to indicate partition to use when inserting data
+|`CamelGoogleBigQuery.TableId` |`String` |Table id where data will be submitted. If specified will override endpoint configuration
 |=======================================================================
 
 

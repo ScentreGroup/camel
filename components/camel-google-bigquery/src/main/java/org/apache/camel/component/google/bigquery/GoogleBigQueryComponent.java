@@ -47,7 +47,7 @@ public class GoogleBigQueryComponent extends DefaultComponent {
     protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
         String[] parts = remaining.split(":");
 
-        if (parts.length < 3) {
+        if (parts.length < 2) {
             throw new IllegalArgumentException("Google BigQuery Endpoint format \"projectId:datasetId:tableName\"");
         }
 

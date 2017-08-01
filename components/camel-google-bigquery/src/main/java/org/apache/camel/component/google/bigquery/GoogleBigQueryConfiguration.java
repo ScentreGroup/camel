@@ -40,7 +40,7 @@ public class GoogleBigQueryConfiguration {
     private String projectId;
     @UriPath(label = "common", description = "BigQuery Dataset Id") @Metadata(required = "true")
     private String datasetId;
-    @UriPath(label = "common", description = "BigQuery table id") @Metadata(required = "true")
+    @UriPath(label = "common", description = "BigQuery table id") @Metadata(required = "false")
     private String tableId;
 
     public void parseRemaining(String remaining) {

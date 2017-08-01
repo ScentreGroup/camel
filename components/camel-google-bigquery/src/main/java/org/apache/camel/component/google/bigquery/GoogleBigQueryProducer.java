@@ -95,25 +95,32 @@ public class GoogleBigQueryProducer extends DefaultAsyncProducer {
 
         String partitionDecorator = "";
         String suffix = "";
+        String tableId = configuration.getTableId() == null ? "" : configuration.getTableId();
         int totalProcessed = 0;
 
         for (Exchange ex: exchanges) {
             String tmpPartitionDecorator = exchange.getIn().getHeader(GoogleBigQueryConstants.PARTITION_DECORATOR, "", String.class);
             String tmpSuffix = exchange.getIn().getHeader(GoogleBigQueryConstants.TABLE_SUFFIX, "", String.class);
+            String tmpTableId = exchange.getIn().getHeader(GoogleBigQueryConstants.TABLE_ID, "", String.class);
+
+            if (tableId.isEmpty() && tmpTableId.isEmpty()) {
+                throw new IllegalArgumentException("tableId need to be specified in one of endpoint configuration or exchange header");
+            }
 
             // Ensure all rows of same request goes to same table and suffix
-            if (!tmpPartitionDecorator.equals(partitionDecorator) || !tmpSuffix.equals(suffix)) {
+            if (!tmpPartitionDecorator.equals(partitionDecorator) || !tmpSuffix.equals(suffix) || !tmpTableId.equals(tableId)) {
                 if (!processGroup.isEmpty()) {
-                    totalProcessed += process(partitionDecorator, suffix, processGroup, exchange.getExchangeId());
+                    totalProcessed += process(tableId, partitionDecorator, suffix, processGroup, exchange.getExchangeId());
                 }
                 processGroup.clear();
                 partitionDecorator = tmpPartitionDecorator;
                 suffix = tmpSuffix;
+                tableId = tmpTableId;
             }
             processGroup.add(ex);
         }
         if (!processGroup.isEmpty()) {
-            totalProcessed += process(partitionDecorator, suffix, processGroup, exchange.getExchangeId());
+            totalProcessed += process(tableId, partitionDecorator, suffix, processGroup, exchange.getExchangeId());
         }
 
         if (totalProcessed == 0) {
@@ -121,10 +128,10 @@ public class GoogleBigQueryProducer extends DefaultAsyncProducer {
         }
     }
 
-    private int process(String partitionDecorator, String suffix, List<Exchange> exchanges, String exchangeId) throws Exception {
-        String tableId = Strings.isNullOrEmpty(partitionDecorator)
-                ? configuration.getTableId()
-                : (configuration.getTableId() + "?" + partitionDecorator);
+    private int process(String tableId, String partitionDecorator, String suffix, List<Exchange> exchanges, String exchangeId) throws Exception {
+        String tableIdWithPartition = Strings.isNullOrEmpty(partitionDecorator)
+                ? tableId
+                : (tableId + "?" + partitionDecorator);
 
         List<TableDataInsertAllRequest.Rows> apiRequestRows = new ArrayList<>();
         for (Exchange ex: exchanges) {
@@ -152,7 +159,7 @@ public class GoogleBigQueryProducer extends DefaultAsyncProducer {
                 .tabledata()
                 .insertAll(configuration.getProjectId(),
                         configuration.getDatasetId(),
-                        tableId,     //Getting the actualTableName
+                        tableIdWithPartition,
                         apiRequestData);
         if (suffix != null) {
             apiRequest = apiRequest.set("template_suffix", suffix);
