@@ -99,11 +99,11 @@ public class GoogleBigQueryProducer extends DefaultAsyncProducer {
         int totalProcessed = 0;
 
         for (Exchange ex: exchanges) {
-            String tmpPartitionDecorator = exchange.getIn().getHeader(GoogleBigQueryConstants.PARTITION_DECORATOR, "", String.class);
-            String tmpSuffix = exchange.getIn().getHeader(GoogleBigQueryConstants.TABLE_SUFFIX, "", String.class);
-            String tmpTableId = exchange.getIn().getHeader(GoogleBigQueryConstants.TABLE_ID, "", String.class);
+            String tmpPartitionDecorator = ex.getIn().getHeader(GoogleBigQueryConstants.PARTITION_DECORATOR, "", String.class);
+            String tmpSuffix = ex.getIn().getHeader(GoogleBigQueryConstants.TABLE_SUFFIX, "", String.class);
+            String tmpTableId = ex.getIn().getHeader(GoogleBigQueryConstants.TABLE_ID, tableId, String.class);
 
-            if (tableId.isEmpty() && tmpTableId.isEmpty()) {
+            if (tmpTableId.isEmpty()) {
                 throw new IllegalArgumentException("tableId need to be specified in one of endpoint configuration or exchange header");
             }
 
@@ -115,7 +115,7 @@ public class GoogleBigQueryProducer extends DefaultAsyncProducer {
                 processGroup.clear();
                 partitionDecorator = tmpPartitionDecorator;
                 suffix = tmpSuffix;
-                tableId = tmpTableId;
+                tableId = tmpTableId.isEmpty() ? tableId : tmpTableId;
             }
             processGroup.add(ex);
         }
@@ -162,7 +162,7 @@ public class GoogleBigQueryProducer extends DefaultAsyncProducer {
                         tableIdWithPartition,
                         apiRequestData);
         if (suffix != null) {
-            apiRequest = apiRequest.set("template_suffix", suffix);
+            apiRequest.set("template_suffix", suffix);
         }
 
         logger.trace("uploader thread/id: {} / {} . calling google api", Thread.currentThread(), exchangeId);

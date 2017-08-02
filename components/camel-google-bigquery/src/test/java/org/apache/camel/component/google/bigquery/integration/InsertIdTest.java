@@ -20,19 +20,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import org.apache.camel.Endpoint;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.google.bigquery.BigQueryTestSupport;
 import org.apache.camel.component.google.bigquery.GoogleBigQueryConstants;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class InsertIdTest extends BigQueryTestSupport {

@@ -29,9 +29,9 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.google.bigquery.BigQueryTestSupport;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultExchange;
+import org.junit.Before;
 import org.junit.Test;
 
 public class AsyncTest extends BigQueryTestSupport {
@@ -40,7 +40,7 @@ public class AsyncTest extends BigQueryTestSupport {
     @EndpointInject(uri = "direct:in")
     private Endpoint directIn;
 
-    @EndpointInject(uri = "google-bigquery:{{project.id}}:{{bigquery.datasetId}}:" + TABLE_ID + "?createTable=true&schemaLocation=classpath:/schema/singlerow.json")
+    @EndpointInject(uri = "google-bigquery:{{project.id}}:{{bigquery.datasetId}}:" + TABLE_ID)
     private Endpoint bigqueryEndpoint;
 
     @EndpointInject(uri = "mock:sendResult")
@@ -48,6 +48,11 @@ public class AsyncTest extends BigQueryTestSupport {
 
     @Produce(uri = "direct:in")
     private ProducerTemplate producer;
+
+    @Before
+    public void init() throws Exception {
+        createBqTable(TABLE_ID);
+    }
 
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
@@ -67,9 +72,9 @@ public class AsyncTest extends BigQueryTestSupport {
     }
 
     @Test
-    public void singleMessage() throws Exception {
+    public void sendAsync() throws Exception {
         List<Map> objects = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 5; i++) {
             Exchange exchange = new DefaultExchange(context);
             String uuidCol1 = UUID.randomUUID().toString();
             String uuidCol2 = UUID.randomUUID().toString();
@@ -81,7 +86,7 @@ public class AsyncTest extends BigQueryTestSupport {
             exchange.getIn().setBody(object);
             producer.send(exchange);
         }
-        sendResult.expectedMessageCount(10);
+        sendResult.expectedMessageCount(5);
 
         sendResult.assertIsSatisfied(4000);
 

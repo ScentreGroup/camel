@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.camel.component.google.bigquery;
+package org.apache.camel.component.google.bigquery.integration;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -32,6 +32,8 @@ import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableSchema;
 import org.apache.camel.CamelContext;
+import org.apache.camel.component.google.bigquery.GoogleBigQueryComponent;
+import org.apache.camel.component.google.bigquery.GoogleBigQueryConnectionFactory;
 import org.apache.camel.component.properties.PropertiesComponent;
 import org.apache.camel.impl.JndiRegistry;
 import org.apache.camel.test.junit4.CamelTestSupport;
